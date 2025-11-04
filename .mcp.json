@@ -12,6 +12,10 @@
         "shadcn@latest",
         "mcp"
       ]
+    },
+		"motion": {
+      "command": "npx",
+      "args": ["-y", "motion-ai"]
     }
   }
 }
