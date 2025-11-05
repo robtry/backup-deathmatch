@@ -5,22 +5,39 @@ import MainMenu from '@/components/ui/8bit/blocks/main-menu';
 import { JoinRoomDialog } from '@/components/JoinRoomDialog';
 import { Button } from '@/components/ui/8bit/button';
 import { logger } from '@/lib/utils/logger';
-import { createRoom } from '@/services/roomService';
+import { createRoom, roomExists } from '@/services/roomService';
 import { LoadingState } from '@/components/LoadingState';
 
 export default function MainMenuPage() {
   const navigate = useNavigate();
-  const { user, logout } = useAuthStore();
+  const { user, logout, clearCurrentRoom } = useAuthStore();
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Redirect to active room if user has one
+  // Redirect to active room if user has one (and it exists)
   useEffect(() => {
-    if (user?.currentRoom) {
-      logger.info('User has active room, redirecting', { roomCode: user.currentRoom });
-      navigate(`/game/${user.currentRoom}`);
-    }
-  }, [user, navigate]);
+    const checkAndRedirect = async () => {
+      if (user?.currentRoom) {
+        logger.info('User has active room, checking if exists', { roomCode: user.currentRoom });
+
+        try {
+          const exists = await roomExists(user.currentRoom);
+
+          if (exists) {
+            logger.info('Room exists, redirecting', { roomCode: user.currentRoom });
+            navigate(`/game/${user.currentRoom}`);
+          } else {
+            logger.warn('User current_room does not exist, clearing', { roomCode: user.currentRoom });
+            await clearCurrentRoom();
+          }
+        } catch (error) {
+          logger.error('Error checking room existence', error);
+        }
+      }
+    };
+
+    checkAndRedirect();
+  }, [user?.currentRoom, navigate, clearCurrentRoom]);
 
   const handleCreateRoom = async () => {
     if (!user) {

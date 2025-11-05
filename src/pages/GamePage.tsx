@@ -21,7 +21,7 @@ interface PlayerInfo {
 export default function GamePage() {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, clearCurrentRoom } = useAuthStore();
   const [isCopied, setIsCopied] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
@@ -30,6 +30,26 @@ export default function GamePage() {
   const [isLoadingRoom, setIsLoadingRoom] = useState(true);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const isLeavingRef = useRef(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Timeout to detect if room doesn't exist
+  useEffect(() => {
+    // Set timeout for 5 seconds
+    timeoutRef.current = setTimeout(() => {
+      if (isLoadingRoom && !hasLoadedOnce) {
+        logger.warn('Room not found after 5 seconds', { roomId }, 'GamePage');
+        clearCurrentRoom();
+        navigate('/menu');
+      }
+    }, 5000);
+
+    // Cleanup timeout
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [roomId, isLoadingRoom, hasLoadedOnce, navigate, clearCurrentRoom]);
 
   // Real-time listener for room updates
   useEffect(() => {
@@ -54,14 +74,26 @@ export default function GamePage() {
         }
 
         if (!snapshot.exists()) {
-          // Only show error and redirect if the room has been loaded before
-          // This prevents race condition on first load with Firebase emulator
+          // Room was deleted
           if (hasLoadedOnce) {
             logger.warn('Room no longer exists', { roomId }, 'GamePage');
-            toast('La sala ya no existe');
+            clearCurrentRoom();
             navigate('/menu');
+          }
+          return;
+        }
+
+        const roomData = snapshot.data() as FirestoreRoom;
+
+        // Validate that user is in the room
+        if (user && !roomData.order_players.includes(user.id)) {
+          logger.warn('User not in room, redirecting', { roomId, userId: user.id }, 'GamePage');
+
+          // If user has a current_room that's different, redirect there
+          if (user.currentRoom && user.currentRoom !== roomId) {
+            navigate(`/game/${user.currentRoom}`);
           } else {
-            logger.debug('Room not found on first load, waiting...', { roomId }, 'GamePage');
+            navigate('/menu');
           }
           return;
         }
@@ -71,7 +103,6 @@ export default function GamePage() {
           setHasLoadedOnce(true);
         }
 
-        const roomData = snapshot.data() as FirestoreRoom;
         logger.debug('Room data updated', { roomId, status: roomData.status, playerCount: Object.keys(roomData.players).length }, 'GamePage');
 
         setRoom(roomData);

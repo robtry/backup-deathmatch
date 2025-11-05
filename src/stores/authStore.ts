@@ -6,7 +6,7 @@ import {
   onAuthStateChanged,
   type User as FirebaseUser
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/config';
 import { authLogger } from '@/lib/utils/logger';
 import type { User } from '@/types';
@@ -26,6 +26,7 @@ interface AuthState {
   setUser: (user: User | null) => void;
   setError: (error: string | null) => void;
   initializeAuth: () => (() => void);
+  clearCurrentRoom: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -245,6 +246,30 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (error) {
       authLogger.error('Logout failed', error);
       set({ loading: false, error: 'Error al cerrar sesión' });
+      throw error;
+    }
+  },
+
+  clearCurrentRoom: async () => {
+    const { user } = get();
+    if (!user) {
+      authLogger.warn('Cannot clear current room: no user logged in');
+      return;
+    }
+
+    try {
+      authLogger.info('Clearing current room', { userId: user.id, previousRoom: user.currentRoom });
+
+      // Update Firebase
+      const userRef = doc(db, 'users', user.id);
+      await updateDoc(userRef, { current_room: null });
+
+      // Update local state
+      set({ user: { ...user, currentRoom: null } });
+
+      authLogger.info('Current room cleared successfully', { userId: user.id });
+    } catch (error) {
+      authLogger.error('Failed to clear current room', error);
       throw error;
     }
   }
