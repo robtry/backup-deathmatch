@@ -8,6 +8,8 @@ import { logger } from '@/lib/utils/logger';
 import { useAuthStore } from '@/stores/authStore';
 import { leaveRoom, startGame } from '@/services/roomService';
 import type { FirestoreRoom } from '@/types';
+import { LoadingState } from '@/components/LoadingState';
+import HealthBar from '@/components/ui/8bit/health-bar';
 
 interface PlayerInfo {
   id: string;
@@ -208,7 +210,7 @@ export default function GamePage() {
   if (isLoadingRoom) {
     return (
       <div className="min-h-screen bg-background p-8 flex items-center justify-center">
-        <p className="text-muted-foreground">Cargando sala...</p>
+        <LoadingState message="Conectando a la sala..." />
       </div>
     );
   }
@@ -225,7 +227,15 @@ export default function GamePage() {
               onClick={handleLeaveRoom}
               disabled={isLeaving}
             >
-              {isLeaving ? 'Abandonando...' : 'Abandonar Sala'}
+              {isLeaving ? (
+                <LoadingState
+                  variant="compact"
+                  message="Abandonando..."
+                  className="justify-center"
+                />
+              ) : (
+                'Abandonar Sala'
+              )}
             </Button>
           </div>
         )}
@@ -258,32 +268,39 @@ export default function GamePage() {
               {players.map((player, index) => (
                 <div
                   key={player.id}
-                  className="flex items-center justify-between p-4 border rounded-lg"
+                  className="p-4 border rounded-lg space-y-3"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="font-bold text-lg">
-                      {index + 1}.
-                    </span>
-                    <span className="font-medium">
-                      {player.name}
-                      {player.id === user?.id && ' (Tú)'}
-                      {index === 0 && (
-                        <span className="ml-2 text-xs px-2 py-1 bg-yellow-500/20 text-yellow-600 rounded">
-                          Creador
-                        </span>
-                      )}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="font-bold text-lg">
+                        {index + 1}.
+                      </span>
+                      <span className="font-medium">
+                        {player.name}
+                        {player.id === user?.id && ' (Tú)'}
+                        {index === 0 && (
+                          <span className="ml-2 text-xs px-2 py-1 bg-yellow-500/20 text-yellow-600 rounded">
+                            Creador
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      Integridad: {player.integrity}
                     </span>
                   </div>
-                  <span className="text-muted-foreground">
-                    Integridad: {player.integrity}
-                  </span>
+                  <HealthBar value={player.integrity} variant="retro" />
                 </div>
               ))}
 
               {/* Show waiting message if only 1 player */}
               {players.length === 1 && (
-                <div className="text-center py-6 text-muted-foreground">
-                  <p>Esperando al segundo jugador...</p>
+                <div className="py-6">
+                  <LoadingState
+                    variant="compact"
+                    message="Esperando oponente..."
+                    className="justify-center"
+                  />
                 </div>
               )}
             </div>
@@ -298,7 +315,15 @@ export default function GamePage() {
                   disabled={isStarting}
                   className="w-full"
                 >
-                  {isStarting ? 'Iniciando...' : 'INICIAR PARTIDA'}
+                  {isStarting ? (
+                    <LoadingState
+                      variant="compact"
+                      message="Iniciando partida..."
+                      className="justify-center"
+                    />
+                  ) : (
+                    'INICIAR PARTIDA'
+                  )}
                 </Button>
               </div>
             )}

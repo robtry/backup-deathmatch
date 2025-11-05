@@ -117,8 +117,8 @@ service cloud.firestore {
                        request.resource.data.order_players[0] == request.auth.uid &&
                        // Turn must be 0
                        request.resource.data.turn == 0 &&
-                       // Memory deck must be empty initially
-                       request.resource.data.memory_deck.size() == 0 &&
+                       // Memory deck can be pre-populated with up to 100 cards
+                       request.resource.data.memory_deck.size() <= 100 &&
                        // No current card initially
                        request.resource.data.current_card == null &&
                        // Timestamps must be set

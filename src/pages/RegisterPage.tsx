@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import { RegisterForm } from '@/components/ui/8bit/blocks/register-form';
+import { LoadingState } from '@/components/LoadingState';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -20,9 +21,7 @@ export default function RegisterPage() {
   if (!initialized || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="animate-pulse text-xl">Cargando...</div>
-        </div>
+        <LoadingState message="Inicializando sistema..." />
       </div>
     );
   }

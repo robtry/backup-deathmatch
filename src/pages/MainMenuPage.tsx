@@ -6,6 +6,7 @@ import { JoinRoomDialog } from '@/components/JoinRoomDialog';
 import { Button } from '@/components/ui/8bit/button';
 import { logger } from '@/lib/utils/logger';
 import { createRoom } from '@/services/roomService';
+import { LoadingState } from '@/components/LoadingState';
 
 export default function MainMenuPage() {
   const navigate = useNavigate();
@@ -78,7 +79,15 @@ export default function MainMenuPage() {
               className="w-full"
               disabled={isCreatingRoom}
             >
-              {isCreatingRoom ? 'CREANDO SALA...' : 'CREAR SALA'}
+              {isCreatingRoom ? (
+                <LoadingState
+                  variant="compact"
+                  message="Generando sala..."
+                  className="justify-center"
+                />
+              ) : (
+                'CREAR SALA'
+              )}
             </Button>
 
             <JoinRoomDialog>

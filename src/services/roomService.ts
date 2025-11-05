@@ -10,6 +10,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { roomLogger } from '@/lib/utils/logger';
+import { generateGameDeck } from './deckService';
 import type { FirestoreRoom, RoomStatus } from '@/types';
 
 // Custom alphabet for room codes (no confusing characters: 0/O, 1/I)
@@ -62,6 +63,11 @@ export const createRoom = async (userId: string, roomCode?: string): Promise<str
     // Generate unique room code if not provided
     const finalRoomCode = roomCode || await generateUniqueRoomCode();
 
+    // Generate the game deck (15 random cards with authenticity)
+    roomLogger.info('Generating game deck for new room', { roomCode: finalRoomCode });
+    const memoryDeck = await generateGameDeck();
+    roomLogger.info('Game deck generated', { roomCode: finalRoomCode, deckSize: memoryDeck.length });
+
     // Use transaction to ensure atomicity (room creation + user update)
     const result = await runTransaction(db, async (transaction) => {
       const roomRef = doc(db, 'rooms', finalRoomCode);
@@ -94,13 +100,14 @@ export const createRoom = async (userId: string, roomCode?: string): Promise<str
         lastUpdate: now,
         order_players: [userId], // Creator is first player
         turn: 0, // First player's turn
-        memory_deck: [], // Will be populated when game starts
+        memory_deck: memoryDeck, // Populated with 15 random cards
         current_card: null
       };
 
       roomLogger.debug('Creating room document', {
         roomCode: finalRoomCode,
-        data: roomData
+        deckSize: memoryDeck.length,
+        status: roomData.status
       });
 
       // Create room document
@@ -114,7 +121,8 @@ export const createRoom = async (userId: string, roomCode?: string): Promise<str
       roomLogger.info('Room created successfully', {
         roomCode: finalRoomCode,
         userId,
-        status: 'waiting'
+        status: 'waiting',
+        deckCards: memoryDeck.length
       });
 
       return finalRoomCode;

@@ -7,13 +7,12 @@ export interface User {
 }
 
 // Card types
-export type CardComposition = 'authentic' | 'corrupted' | 'fatal_glitch';
+export type Authenticity = 'authentic' | 'corrupted' | 'fatalGlitch';
 
 export interface MemoryCard {
-  id: string;
-  memory: string;
-  value: number;
-  composition: CardComposition;
+  memory: string; // The memory text/description
+  authenticity: Authenticity; // Whether it's authentic, corrupted, or fatal glitch
+  value: number; // Points (+1, -1, -10 based on authenticity)
 }
 
 export interface ItemCard {
@@ -58,11 +57,6 @@ export interface FirestorePlayer {
   items: ItemCard[];
 }
 
-export interface FirestoreMemoryDeckCard {
-  composition: CardComposition;
-  memory: MemoryCard;
-}
-
 export interface FirestoreRoom {
   players: {
     [userId: string]: FirestorePlayer;
@@ -73,7 +67,7 @@ export interface FirestoreRoom {
   lastUpdate: any; // Firebase Timestamp
   order_players: string[];
   turn: number;
-  memory_deck: FirestoreMemoryDeckCard[];
+  memory_deck: MemoryCard[];
   current_card: MemoryCard | null;
 }
 

@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { LoadingState } from "@/components/LoadingState";
 
 export function LoginForm({
   className,
@@ -100,7 +101,15 @@ export function LoginForm({
               </div>
 
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Cargando...' : 'Ingresar'}
+                {loading ? (
+                  <LoadingState
+                    variant="compact"
+                    message="Verificando credenciales..."
+                    className="justify-center"
+                  />
+                ) : (
+                  'Ingresar'
+                )}
               </Button>
             </div>
 

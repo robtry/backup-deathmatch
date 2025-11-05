@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { LoadingState } from "@/components/LoadingState";
 
 export function RegisterForm({
   className,
@@ -114,7 +115,15 @@ export function RegisterForm({
               </div>
 
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Creando cuenta...' : 'Registrarse'}
+                {loading ? (
+                  <LoadingState
+                    variant="compact"
+                    message="Creando cuenta..."
+                    className="justify-center"
+                  />
+                ) : (
+                  'Registrarse'
+                )}
               </Button>
             </div>
 
