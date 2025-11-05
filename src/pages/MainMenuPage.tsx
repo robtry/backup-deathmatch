@@ -1,21 +1,29 @@
-import { useNavigate } from 'react-router-dom'
-import MainMenu from '@/components/ui/8bit/blocks/main-menu'
+import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '@/stores/authStore';
+import MainMenu from '@/components/ui/8bit/blocks/main-menu';
+import { logger } from '@/lib/utils/logger';
 
 export default function MainMenuPage() {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
+  const { logout } = useAuthStore();
 
   const handleCreateRoom = () => {
-    const roomId = Math.random().toString(36).substring(7)
-    navigate(`/game/${roomId}`)
-  }
+    const roomId = Math.random().toString(36).substring(7);
+    navigate(`/game/${roomId}`);
+  };
 
   const handleJoinRoom = () => {
-    console.log('Unirse a sala - proximamente')
-  }
+    logger.info('Unirse a sala - proximamente');
+  };
 
-  const handleLogout = () => {
-    navigate('/')
-  }
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      logger.error('Error al cerrar sesión', error);
+    }
+  };
 
   const menuItems = [
     {

@@ -1,6 +1,32 @@
-import { LoginForm } from '@/components/ui/8bit/blocks/login-form'
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '@/stores/authStore';
+import { LoginForm } from '@/components/ui/8bit/blocks/login-form';
 
 export default function AuthPage() {
+  const navigate = useNavigate();
+  const { user, initialized, loading } = useAuthStore();
+
+  useEffect(() => {
+    if (initialized && !loading && user) {
+      if (user.currentRoom) {
+        navigate(`/game/${user.currentRoom}`);
+      } else {
+        navigate('/menu');
+      }
+    }
+  }, [user, initialized, loading, navigate]);
+
+  if (!initialized || loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-pulse text-xl">Cargando...</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-8">
       <div className="max-w-md w-full space-y-6">
@@ -14,5 +40,5 @@ export default function AuthPage() {
         <LoginForm />
       </div>
     </div>
-  )
+  );
 }
