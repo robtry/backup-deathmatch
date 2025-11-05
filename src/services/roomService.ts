@@ -424,3 +424,58 @@ export const startGame = async (userId: string, roomCode: string): Promise<void>
     throw new Error('Error al iniciar la partida.');
   }
 };
+
+/**
+ * Completes the intro phase by changing room status from 'intro' to 'playing'
+ * Any player in the room can complete the intro (both see the same intro screen)
+ * @param roomCode - The room code to transition to playing
+ * @returns Promise that resolves when intro is completed
+ * @throws Error if room doesn't exist or status is not 'intro'
+ */
+export const completeIntro = async (roomCode: string): Promise<void> => {
+  roomLogger.info('Attempting to complete intro', { roomCode });
+
+  try {
+    await runTransaction(db, async (transaction) => {
+      const roomRef = doc(db, 'rooms', roomCode);
+
+      // Get room data
+      const roomSnap = await transaction.get(roomRef);
+      if (!roomSnap.exists()) {
+        throw new Error('La sala no existe.');
+      }
+
+      const roomData = roomSnap.data() as FirestoreRoom;
+
+      // Validate room status is 'intro'
+      if (roomData.status !== 'intro') {
+        throw new Error('La intro no está en progreso. Status actual: ' + roomData.status);
+      }
+
+      // Update room status to 'playing'
+      transaction.update(roomRef, {
+        status: 'playing' as RoomStatus,
+        lastUpdate: Timestamp.now()
+      });
+
+      roomLogger.info('Intro completed successfully', {
+        roomCode,
+        previousStatus: 'intro',
+        newStatus: 'playing'
+      });
+    });
+  } catch (error: any) {
+    // Handle transaction errors
+    if (error instanceof Error) {
+      roomLogger.error('Failed to complete intro', {
+        roomCode,
+        message: error.message
+      });
+      throw error;
+    }
+
+    // Generic error
+    roomLogger.error('Unexpected error completing intro', { roomCode, error });
+    throw new Error('Error al completar la introducción.');
+  }
+};

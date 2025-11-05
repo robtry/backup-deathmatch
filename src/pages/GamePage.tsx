@@ -6,10 +6,11 @@ import { Button } from '@/components/ui/8bit/button';
 import { toast } from '@/components/ui/8bit/toast';
 import { logger } from '@/lib/utils/logger';
 import { useAuthStore } from '@/stores/authStore';
-import { leaveRoom, startGame } from '@/services/roomService';
+import { leaveRoom, startGame, completeIntro } from '@/services/roomService';
 import type { FirestoreRoom } from '@/types';
 import { LoadingState } from '@/components/LoadingState';
 import HealthBar from '@/components/ui/8bit/health-bar';
+import { GameIntro } from '@/components/GameIntro';
 
 interface PlayerInfo {
   id: string;
@@ -207,12 +208,34 @@ export default function GamePage() {
   // Check if we can start the game (2 players, waiting status, user is creator)
   const canStartGame = isCreator && room?.status === 'waiting' && players.length === 2;
 
+  // Handle intro completion
+  const handleIntroComplete = async () => {
+    if (!roomId) {
+      logger.warn('Cannot complete intro: missing roomId', undefined, 'GamePage');
+      return;
+    }
+
+    try {
+      logger.info('Completing intro, transitioning to playing', { roomId }, 'GamePage');
+      await completeIntro(roomId);
+      logger.info('Intro completed successfully', { roomId }, 'GamePage');
+    } catch (error) {
+      logger.error('Failed to complete intro', error, 'GamePage');
+      toast('Error al iniciar el juego');
+    }
+  };
+
   if (isLoadingRoom) {
     return (
       <div className="min-h-screen bg-background p-8 flex items-center justify-center">
         <LoadingState message="Conectando a la sala..." />
       </div>
     );
+  }
+
+  // Show intro screen when room status is 'intro'
+  if (room?.status === 'intro') {
+    return <GameIntro onComplete={handleIntroComplete} />;
   }
 
   return (
