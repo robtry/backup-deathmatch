@@ -16,6 +16,8 @@ import { Button } from '@/components/ui/8bit/button';
 import { Input } from '@/components/ui/8bit/input';
 import { Label } from '@/components/ui/8bit/label';
 import { logger } from '@/lib/utils/logger';
+import { useAuthStore } from '@/stores/authStore';
+import { joinRoom } from '@/services/roomService';
 
 const joinRoomSchema = z.object({
   roomId: z
@@ -33,28 +35,42 @@ interface JoinRoomDialogProps {
 
 export function JoinRoomDialog({ children }: JoinRoomDialogProps) {
   const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { user } = useAuthStore();
 
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors: formErrors, isSubmitting },
     reset,
   } = useForm<JoinRoomFormData>({
     resolver: zodResolver(joinRoomSchema),
   });
 
   const onSubmit = async (data: JoinRoomFormData) => {
-    try {
-      logger.info('Attempting to join room:', data.roomId);
+    if (!user) {
+      setError('Por favor inicia sesión nuevamente');
+      return;
+    }
 
-      // TODO: Validate that room exists in Firebase
-      // For now, just navigate to the room
-      navigate(`/game/${data.roomId}`);
+    setError(null);
+
+    try {
+      logger.info('Attempting to join room', { roomId: data.roomId, userId: user.id });
+
+      // Join room using service (validates room exists, not full, etc.)
+      await joinRoom(user.id, data.roomId.toUpperCase());
+
+      logger.info('Successfully joined room', { roomId: data.roomId });
+
+      // Navigate to game room
+      navigate(`/game/${data.roomId.toUpperCase()}`);
       setOpen(false);
       reset();
-    } catch (error) {
-      logger.error('Error joining room:', error);
+    } catch (error: any) {
+      logger.error('Error joining room', { error, roomId: data.roomId });
+      setError(error.message || 'Error al unirse a la sala');
     }
   };
 
@@ -62,6 +78,7 @@ export function JoinRoomDialog({ children }: JoinRoomDialogProps) {
     setOpen(newOpen);
     if (!newOpen) {
       reset();
+      setError(null);
     }
   };
 
@@ -79,6 +96,11 @@ export function JoinRoomDialog({ children }: JoinRoomDialogProps) {
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="grid gap-4 py-4">
+            {error && (
+              <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded text-sm">
+                {error}
+              </div>
+            )}
             <div className="grid gap-2">
               <Label htmlFor="roomId">Codigo de Sala</Label>
               <Input
@@ -87,9 +109,9 @@ export function JoinRoomDialog({ children }: JoinRoomDialogProps) {
                 {...register('roomId')}
                 className="uppercase"
               />
-              {errors.roomId && (
+              {formErrors.roomId && (
                 <p className="text-sm text-destructive">
-                  {errors.roomId.message}
+                  {formErrors.roomId.message}
                 </p>
               )}
             </div>

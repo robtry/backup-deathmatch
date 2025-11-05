@@ -346,3 +346,73 @@ export const leaveRoom = async (userId: string, roomCode: string): Promise<void>
     throw new Error('Error al salir de la sala.');
   }
 };
+
+/**
+ * Starts a game by changing room status from 'waiting' to 'intro'
+ * Only the room creator (first player in order_players) can start the game
+ * @param userId - The ID of the user attempting to start the game
+ * @param roomCode - The room code to start
+ * @returns Promise that resolves when game is started
+ * @throws Error if validation fails or user doesn't have permission
+ */
+export const startGame = async (userId: string, roomCode: string): Promise<void> => {
+  roomLogger.info('User attempting to start game', { userId, roomCode });
+
+  try {
+    await runTransaction(db, async (transaction) => {
+      const roomRef = doc(db, 'rooms', roomCode);
+
+      // Get room data
+      const roomSnap = await transaction.get(roomRef);
+      if (!roomSnap.exists()) {
+        throw new Error('La sala no existe.');
+      }
+
+      const roomData = roomSnap.data() as FirestoreRoom;
+
+      // Validate room status is 'waiting'
+      if (roomData.status !== 'waiting') {
+        throw new Error('La partida ya ha comenzado o ha finalizado.');
+      }
+
+      // Validate exactly 2 players
+      const playerCount = Object.keys(roomData.players).length;
+      if (playerCount !== 2) {
+        throw new Error('Se necesitan exactamente 2 jugadores para iniciar la partida.');
+      }
+
+      // Validate user is the creator (first in order_players)
+      const creatorId = roomData.order_players[0];
+      if (creatorId !== userId) {
+        throw new Error('Solo el creador de la sala puede iniciar la partida.');
+      }
+
+      // Update room status to 'intro'
+      transaction.update(roomRef, {
+        status: 'intro' as RoomStatus,
+        lastUpdate: Timestamp.now()
+      });
+
+      roomLogger.info('Game started successfully', {
+        userId,
+        roomCode,
+        playerCount,
+        newStatus: 'intro'
+      });
+    });
+  } catch (error: any) {
+    // Handle transaction errors
+    if (error instanceof Error) {
+      roomLogger.error('Failed to start game', {
+        userId,
+        roomCode,
+        message: error.message
+      });
+      throw error;
+    }
+
+    // Generic error
+    roomLogger.error('Unexpected error starting game', { userId, roomCode, error });
+    throw new Error('Error al iniciar la partida.');
+  }
+};

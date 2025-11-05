@@ -66,8 +66,9 @@ service cloud.firestore {
     // ============================================================================
 
     match /users/{userId} {
-      // Users can only read their own document
-      allow read: if isOwner(userId);
+      // Users can read their own document OR any user document
+      // (needed to display player names in game rooms)
+      allow read: if isAuthenticated();
 
       // Users can create their own document during registration
       allow create: if isOwner(userId) &&
@@ -127,7 +128,9 @@ service cloud.firestore {
 
       // Updating a room (game moves, player joining, etc.)
       allow update: if isAuthenticated() &&
-                       isPlayerInRoom(resource.data) &&
+                       // Either already a player OR joining the room
+                       (isPlayerInRoom(resource.data) ||
+                        request.auth.uid in request.resource.data.players) &&
                        hasValidRoomStructure(request.resource.data) &&
                        hasValidStatus(request.resource.data.status) &&
                        // Validate status transition

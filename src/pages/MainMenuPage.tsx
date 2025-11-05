@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import MainMenu from '@/components/ui/8bit/blocks/main-menu';
@@ -12,6 +12,14 @@ export default function MainMenuPage() {
   const { user, logout } = useAuthStore();
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Redirect to active room if user has one
+  useEffect(() => {
+    if (user?.currentRoom) {
+      logger.info('User has active room, redirecting', { roomCode: user.currentRoom });
+      navigate(`/game/${user.currentRoom}`);
+    }
+  }, [user, navigate]);
 
   const handleCreateRoom = async () => {
     if (!user) {
