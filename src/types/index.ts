@@ -52,6 +52,31 @@ export interface Room {
   currentCard: MemoryCard | null;
 }
 
+// Firestore-specific types (with snake_case to match database schema)
+export interface FirestorePlayer {
+  integrity: number;
+  items: ItemCard[];
+}
+
+export interface FirestoreMemoryDeckCard {
+  composition: CardComposition;
+  memory: MemoryCard;
+}
+
+export interface FirestoreRoom {
+  players: {
+    [userId: string]: FirestorePlayer;
+  };
+  status: RoomStatus;
+  createdAt: any; // Firebase Timestamp
+  finishedAt: any | null; // Firebase Timestamp
+  lastUpdate: any; // Firebase Timestamp
+  order_players: string[];
+  turn: number;
+  memory_deck: FirestoreMemoryDeckCard[];
+  current_card: MemoryCard | null;
+}
+
 // Form types
 export interface LoginFormData {
   email: string;

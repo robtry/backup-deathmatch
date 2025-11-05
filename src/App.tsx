@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { Toaster } from '@/components/ui/sonner';
 import AuthPage from '@/pages/AuthPage';
 import RegisterPage from '@/pages/RegisterPage';
 import MainMenuPage from '@/pages/MainMenuPage';
@@ -42,6 +43,7 @@ function App() {
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <Toaster position="top-center" />
     </BrowserRouter>
   );
 }

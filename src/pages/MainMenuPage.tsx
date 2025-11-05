@@ -1,19 +1,38 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import MainMenu from '@/components/ui/8bit/blocks/main-menu';
+import { JoinRoomDialog } from '@/components/JoinRoomDialog';
+import { Button } from '@/components/ui/8bit/button';
 import { logger } from '@/lib/utils/logger';
+import { createRoom } from '@/services/roomService';
 
 export default function MainMenuPage() {
   const navigate = useNavigate();
-  const { logout } = useAuthStore();
+  const { user, logout } = useAuthStore();
+  const [isCreatingRoom, setIsCreatingRoom] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleCreateRoom = () => {
-    const roomId = Math.random().toString(36).substring(7);
-    navigate(`/game/${roomId}`);
-  };
+  const handleCreateRoom = async () => {
+    if (!user) {
+      logger.error('No user found when creating room');
+      setError('Por favor inicia sesión nuevamente');
+      return;
+    }
 
-  const handleJoinRoom = () => {
-    logger.info('Unirse a sala - proximamente');
+    setIsCreatingRoom(true);
+    setError(null);
+
+    try {
+      logger.info('Creating new room', { userId: user.id });
+      const roomCode = await createRoom(user.id);
+      logger.info('Room created successfully, navigating', { roomCode });
+      navigate(`/game/${roomCode}`);
+    } catch (error: any) {
+      logger.error('Error creating room', error);
+      setError(error.message || 'Error al crear la sala');
+      setIsCreatingRoom(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -25,23 +44,6 @@ export default function MainMenuPage() {
     }
   };
 
-  const menuItems = [
-    {
-      label: 'CREAR SALA',
-      action: handleCreateRoom,
-    },
-    {
-      label: 'UNIRSE A SALA',
-      action: handleJoinRoom,
-      variant: 'outline' as const,
-    },
-    {
-      label: 'SALIR',
-      action: handleLogout,
-      variant: 'secondary' as const,
-    },
-  ]
-
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-8">
       <div className="max-w-md w-full space-y-6">
@@ -52,12 +54,42 @@ export default function MainMenuPage() {
           </p>
         </div>
 
-        <MainMenu
-          title="Menú Principal"
-          description="Elige tu acción"
-          menuItems={menuItems}
-        />
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold text-center">Menú Principal</h2>
+          <p className="text-sm text-muted-foreground text-center">Elige tu acción</p>
+
+          {error && (
+            <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded text-sm">
+              {error}
+            </div>
+          )}
+
+          <div className="flex flex-col gap-3">
+            <Button
+              onClick={handleCreateRoom}
+              className="w-full"
+              disabled={isCreatingRoom}
+            >
+              {isCreatingRoom ? 'CREANDO SALA...' : 'CREAR SALA'}
+            </Button>
+
+            <JoinRoomDialog>
+              <Button variant="outline" className="w-full" disabled={isCreatingRoom}>
+                UNIRSE A SALA
+              </Button>
+            </JoinRoomDialog>
+
+            <Button
+              onClick={handleLogout}
+              variant="secondary"
+              className="w-full"
+              disabled={isCreatingRoom}
+            >
+              SALIR
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
-  )
+  );
 }
