@@ -216,33 +216,39 @@ export default function GamePage() {
   return (
     <div className="min-h-screen bg-background p-8">
       <div className="max-w-6xl mx-auto space-y-6">
-        <div className="flex justify-end">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleLeaveRoom}
-            disabled={isLeaving}
-          >
-            {isLeaving ? 'Abandonando...' : 'Abandonar Sala'}
-          </Button>
-        </div>
+        {/* Only show abandon button when room is in waiting status */}
+        {room?.status === 'waiting' && (
+          <div className="flex justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleLeaveRoom}
+              disabled={isLeaving}
+            >
+              {isLeaving ? 'Abandonando...' : 'Abandonar Sala'}
+            </Button>
+          </div>
+        )}
 
         <div className="flex flex-col items-center justify-center space-y-6 py-12">
           <div className="text-center space-y-4">
             <h1 className="text-4xl font-bold tracking-tight">Sala de Juego</h1>
-            <div className="space-y-3">
-              <p className="text-2xl font-bold text-foreground">{roomId}</p>
-              <p className="text-sm text-muted-foreground">Comparte este código con tu oponente</p>
-              <Button
-                variant="default"
-                size="lg"
-                onClick={handleCopyRoomCode}
-                disabled={isCopied}
-                className="w-full max-w-xs"
-              >
-                {isCopied ? '¡Copiado!' : 'Copiar Código'}
-              </Button>
-            </div>
+            {/* Only show room code and copy button to the creator */}
+            {isCreator && (
+              <div className="space-y-3">
+                <p className="text-2xl font-bold text-foreground">{roomId}</p>
+                <p className="text-sm text-muted-foreground">Comparte este código con tu oponente</p>
+                <Button
+                  variant="default"
+                  size="lg"
+                  onClick={handleCopyRoomCode}
+                  disabled={isCopied}
+                  className="w-full max-w-xs"
+                >
+                  {isCopied ? '¡Copiado!' : 'Copiar Código'}
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Players section */}
