@@ -35,6 +35,13 @@ export interface Player {
   items: ItemCard[];
 }
 
+// Player info for UI display
+export interface PlayerInfo {
+  id: string;
+  name: string;
+  integrity: number;
+}
+
 // Room types
 export type RoomStatus = 'waiting' | 'intro' | 'playing' | 'finished';
 

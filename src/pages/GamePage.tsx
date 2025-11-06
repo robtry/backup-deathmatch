@@ -7,16 +7,11 @@ import { toast } from '@/components/ui/8bit/toast';
 import { logger } from '@/lib/utils/logger';
 import { useAuthStore } from '@/stores/authStore';
 import { leaveRoom, startGame, completeIntro } from '@/services/roomService';
-import type { FirestoreRoom } from '@/types';
+import type { FirestoreRoom, PlayerInfo } from '@/types';
 import { LoadingState } from '@/components/LoadingState';
 import HealthBar from '@/components/ui/8bit/health-bar';
 import { GameIntro } from '@/components/GameIntro';
-
-interface PlayerInfo {
-  id: string;
-  name: string;
-  integrity: number;
-}
+import { GameBoard } from '@/components/game/GameBoard';
 
 export default function GamePage() {
   const { roomId } = useParams<{ roomId: string }>();
@@ -267,6 +262,41 @@ export default function GamePage() {
   // Show intro screen when room status is 'intro'
   if (room?.status === 'intro') {
     return <GameIntro onComplete={handleIntroComplete} />;
+  }
+
+  // Show game board when room status is 'playing'
+  if (room?.status === 'playing' && user) {
+    const currentPlayerInfo = players.find(p => p.id === user.id);
+    const opponentInfo = players.find(p => p.id !== user.id);
+
+    if (!currentPlayerInfo || !opponentInfo) {
+      return (
+        <div className="min-h-screen bg-background p-8 flex items-center justify-center">
+          <LoadingState message="Cargando información de jugadores..." />
+        </div>
+      );
+    }
+
+    const handleClaim = () => {
+      logger.info('Player claims card', { userId: user.id, roomId }, 'GamePage');
+      // TODO: Implement claim logic
+    };
+
+    const handleReject = () => {
+      logger.info('Player rejects card', { userId: user.id, roomId }, 'GamePage');
+      // TODO: Implement reject logic
+    };
+
+    return (
+      <GameBoard
+        room={room}
+        currentPlayer={currentPlayerInfo}
+        opponent={opponentInfo}
+        userId={user.id}
+        onClaim={handleClaim}
+        onReject={handleReject}
+      />
+    );
   }
 
   return (
