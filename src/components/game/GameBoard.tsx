@@ -76,6 +76,7 @@ export function GameBoard({
           authenticCount={authenticCount}
           corruptedCount={corruptedCount}
           fatalGlitchCount={fatalGlitchCount}
+          gameStatus={room.status}
         />
       </div>
 

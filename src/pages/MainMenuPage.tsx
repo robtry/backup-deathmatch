@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
-import MainMenu from '@/components/ui/8bit/blocks/main-menu';
 import { JoinRoomDialog } from '@/components/JoinRoomDialog';
 import { Button } from '@/components/ui/8bit/button';
 import { logger } from '@/lib/utils/logger';
