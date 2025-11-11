@@ -15,6 +15,14 @@ export interface MemoryCard {
   value: number; // Points (+1, -1, -10 based on authenticity)
 }
 
+export interface PlayedCard {
+  card: MemoryCard;
+  playedBy: string;      // userId of the player who claimed the card
+  playedAt: any;         // Firebase Timestamp
+  multiplier: number;    // 1 or 3
+  wasForced: boolean;    // true if card was forced back via opponentRejectBack
+}
+
 export interface ItemCard {
   id: string;
   name: string;
@@ -91,7 +99,7 @@ export interface FirestoreRoom {
   selected_card_index: number | null; // Index of the card selected from table_cards
   current_multiplier: number; // Points multiplier (1 or 3)
   card_initiator: string | null; // UserId of the player who originally selected the card
-  revealed_real_memories: string[]; // Array of authentic memory texts that have been claimed
+  used_cards: PlayedCard[]; // Complete history of all cards played in the game
   winner?: string | null; // UserId of the winner when game is finished
   win_reason?: string; // Reason for victory ('reached_10_points' | 'opponent_defeated')
 }

@@ -360,14 +360,22 @@ export const claimCard = async (
       // Calculate next turn
       const nextTurn = (roomData.turn + 1) % roomData.order_players.length;
 
-      // Add authentic memory to revealed_real_memories if it's authentic
-      const updatedRevealedMemories = [...(roomData.revealed_real_memories || [])];
-      if (roomData.current_card.authenticity === 'authentic') {
-        updatedRevealedMemories.push(roomData.current_card.memory);
-        roomLogger.info('Authentic memory added to revealed list', {
-          memory: roomData.current_card.memory
-        });
-      }
+      // Add card to used_cards with metadata
+      const playedCard = {
+        card: roomData.current_card,
+        playedBy: userId,
+        playedAt: Timestamp.now(),
+        multiplier: roomData.current_multiplier,
+        wasForced: false
+      };
+
+      const updatedUsedCards = [...(roomData.used_cards || []), playedCard];
+
+      roomLogger.info('Card added to used_cards', {
+        cardMemory: roomData.current_card.memory,
+        playedBy: userId,
+        multiplier: roomData.current_multiplier
+      });
 
       // Check victory condition
       const victoryCheck = checkVictoryCondition(updatedPlayers, roomData.order_players);
@@ -391,7 +399,7 @@ export const claimCard = async (
           selected_card_index: null,
           current_multiplier: 1,
           card_initiator: null,
-          revealed_real_memories: updatedRevealedMemories,
+          used_cards: updatedUsedCards,
           lastUpdate: Timestamp.now()
         });
       } else {
@@ -406,7 +414,7 @@ export const claimCard = async (
           selected_card_index: null,
           current_multiplier: 1,
           card_initiator: null,
-          revealed_real_memories: updatedRevealedMemories,
+          used_cards: updatedUsedCards,
           lastUpdate: Timestamp.now()
         });
       }
@@ -581,14 +589,22 @@ export const opponentClaimCard = async (
       // Calculate next turn
       const nextTurn = (roomData.turn + 1) % roomData.order_players.length;
 
-      // Add authentic memory to revealed_real_memories if it's authentic
-      const updatedRevealedMemories = [...(roomData.revealed_real_memories || [])];
-      if (roomData.current_card.authenticity === 'authentic') {
-        updatedRevealedMemories.push(roomData.current_card.memory);
-        roomLogger.info('Authentic memory added to revealed list (opponent claim)', {
-          memory: roomData.current_card.memory
-        });
-      }
+      // Add card to used_cards with metadata (opponent claims, multiplier 3, not forced)
+      const playedCard = {
+        card: roomData.current_card,
+        playedBy: userId, // Opponent claimed it
+        playedAt: Timestamp.now(),
+        multiplier: roomData.current_multiplier, // Should be 3
+        wasForced: false // Opponent chose to claim
+      };
+
+      const updatedUsedCards = [...(roomData.used_cards || []), playedCard];
+
+      roomLogger.info('Card added to used_cards (opponent claim)', {
+        cardMemory: roomData.current_card.memory,
+        playedBy: userId,
+        multiplier: roomData.current_multiplier
+      });
 
       // Check victory condition
       const victoryCheck = checkVictoryCondition(updatedPlayers, roomData.order_players);
@@ -612,7 +628,7 @@ export const opponentClaimCard = async (
           selected_card_index: null,
           current_multiplier: 1,
           card_initiator: null,
-          revealed_real_memories: updatedRevealedMemories,
+          used_cards: updatedUsedCards,
           lastUpdate: Timestamp.now()
         });
       } else {
@@ -627,7 +643,7 @@ export const opponentClaimCard = async (
           selected_card_index: null,
           current_multiplier: 1,
           card_initiator: null,
-          revealed_real_memories: updatedRevealedMemories,
+          used_cards: updatedUsedCards,
           lastUpdate: Timestamp.now()
         });
       }
@@ -732,14 +748,23 @@ export const opponentRejectBack = async (
       // Calculate next turn
       const nextTurn = (roomData.turn + 1) % roomData.order_players.length;
 
-      // Add authentic memory to revealed_real_memories if it's authentic
-      const updatedRevealedMemories = [...(roomData.revealed_real_memories || [])];
-      if (roomData.current_card.authenticity === 'authentic') {
-        updatedRevealedMemories.push(roomData.current_card.memory);
-        roomLogger.info('Authentic memory added to revealed list (reject back)', {
-          memory: roomData.current_card.memory
-        });
-      }
+      // Add card to used_cards with metadata (FORCED back to original player)
+      const playedCard = {
+        card: roomData.current_card,
+        playedBy: roomData.card_initiator, // Original player forced to take it
+        playedAt: Timestamp.now(),
+        multiplier: roomData.current_multiplier, // Should be 3
+        wasForced: true // Card was FORCED back
+      };
+
+      const updatedUsedCards = [...(roomData.used_cards || []), playedCard];
+
+      roomLogger.info('Card added to used_cards (forced back)', {
+        cardMemory: roomData.current_card.memory,
+        playedBy: roomData.card_initiator,
+        multiplier: roomData.current_multiplier,
+        wasForced: true
+      });
 
       // Check victory condition
       const victoryCheck = checkVictoryCondition(updatedPlayers, roomData.order_players);
@@ -763,7 +788,7 @@ export const opponentRejectBack = async (
           selected_card_index: null,
           current_multiplier: 1,
           card_initiator: null,
-          revealed_real_memories: updatedRevealedMemories,
+          used_cards: updatedUsedCards,
           lastUpdate: Timestamp.now()
         });
       } else {
@@ -778,7 +803,7 @@ export const opponentRejectBack = async (
           selected_card_index: null,
           current_multiplier: 1,
           card_initiator: null,
-          revealed_real_memories: updatedRevealedMemories,
+          used_cards: updatedUsedCards,
           lastUpdate: Timestamp.now()
         });
       }

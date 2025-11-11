@@ -5,7 +5,8 @@ import {
   selectCard,
   claimCard,
   rejectCard,
-  opponentClaimCard
+  opponentClaimCard,
+  opponentRejectBack
 } from '@/services/gameService';
 import {
   createTestRoom,
@@ -220,9 +221,9 @@ describe('gameService - Integration Tests with Firebase', () => {
     });
   });
 
-  describe('revealed_real_memories tracking', () => {
-    it('should add authentic memory to revealed_real_memories when claimed', async () => {
-      // ARRANGE: Create room with known authentic card
+  describe('used_cards tracking', () => {
+    it('should add card to used_cards when claimed', async () => {
+      // ARRANGE: Create room
       await createTestRoom(ROOM_CODE, PLAYER_1_ID, PLAYER_2_ID, {
         turn_state: 'draw',
         turn: 0
@@ -239,20 +240,21 @@ describe('gameService - Integration Tests with Firebase', () => {
 
       await claimCard(ROOM_CODE, PLAYER_1_ID);
 
-      // ASSERT: If card was authentic, it should be in revealed_real_memories
+      // ASSERT: Card should be in used_cards with correct metadata
       const finalSnap = await getDoc(roomRef);
       const finalRoom = finalSnap.data() as FirestoreRoom;
 
-      if (selectedCard.authenticity === 'authentic') {
-        expect(finalRoom.revealed_real_memories).toContain(selectedCard.memory);
-        expect(finalRoom.revealed_real_memories).toHaveLength(1);
-      } else {
-        // If not authentic, should not be added
-        expect(finalRoom.revealed_real_memories || []).not.toContain(selectedCard.memory);
-      }
+      expect(finalRoom.used_cards).toHaveLength(1);
+
+      const playedCard = finalRoom.used_cards[0];
+      expect(playedCard.card).toEqual(selectedCard);
+      expect(playedCard.playedBy).toBe(PLAYER_1_ID);
+      expect(playedCard.multiplier).toBe(1);
+      expect(playedCard.wasForced).toBe(false);
+      expect(playedCard.playedAt).toBeDefined();
     });
 
-    it('should NOT add corrupted or fatal glitch memories to revealed_real_memories', async () => {
+    it('should add ALL card types to used_cards (authentic, corrupted, fatal)', async () => {
       // ARRANGE: Create room
       await createTestRoom(ROOM_CODE, PLAYER_1_ID, PLAYER_2_ID, {
         turn_state: 'draw',
@@ -261,7 +263,7 @@ describe('gameService - Integration Tests with Firebase', () => {
 
       const roomRef = doc(db, 'rooms', ROOM_CODE);
 
-      // Try to find a corrupted or fatal glitch card by checking multiple turns
+      // Try to find different card types by playing multiple turns
       for (let turnAttempt = 0; turnAttempt < 6; turnAttempt++) {
         const beforeSnap = await getDoc(roomRef);
         const beforeRoom = beforeSnap.data() as FirestoreRoom;
@@ -274,27 +276,27 @@ describe('gameService - Integration Tests with Firebase', () => {
         const room = snap.data() as FirestoreRoom;
         const card = room.current_card!;
 
-        if (card.authenticity === 'corrupted' || card.authenticity === 'fatalGlitch') {
-          // ACT: Claim the corrupted/fatal card
-          await claimCard(ROOM_CODE, currentPlayerId);
-
-          // ASSERT: Should NOT be in revealed_real_memories
-          const finalSnap = await getDoc(roomRef);
-          const finalRoom = finalSnap.data() as FirestoreRoom;
-
-          expect(finalRoom.revealed_real_memories || []).not.toContain(card.memory);
-          return; // Test passed
-        }
-
-        // If card was authentic, claim it and continue searching
+        // ACT: Claim the card (regardless of type)
         await claimCard(ROOM_CODE, currentPlayerId);
+
+        // ASSERT: Card should be in used_cards
+        const finalSnap = await getDoc(roomRef);
+        const finalRoom = finalSnap.data() as FirestoreRoom;
+
+        expect(finalRoom.used_cards.length).toBe(turnAttempt + 1);
+
+        const lastPlayedCard = finalRoom.used_cards[finalRoom.used_cards.length - 1];
+        expect(lastPlayedCard.card).toEqual(card);
+        expect(lastPlayedCard.playedBy).toBe(currentPlayerId);
       }
 
-      // If we didn't find any corrupted cards in first 6 turns, test is inconclusive but passes
-      expect(true).toBe(true);
+      // ASSERT: All 6 cards should be tracked
+      const finalSnap = await getDoc(roomRef);
+      const finalRoom = finalSnap.data() as FirestoreRoom;
+      expect(finalRoom.used_cards).toHaveLength(6);
     });
 
-    it('should accumulate multiple authentic memories over multiple turns', async () => {
+    it('should accumulate multiple cards in used_cards over multiple turns', async () => {
       // ARRANGE: Create room
       await createTestRoom(ROOM_CODE, PLAYER_1_ID, PLAYER_2_ID, {
         turn_state: 'draw',
@@ -302,9 +304,9 @@ describe('gameService - Integration Tests with Firebase', () => {
       });
 
       const roomRef = doc(db, 'rooms', ROOM_CODE);
-      const authenticMemories: string[] = [];
+      const playedCards: any[] = [];
 
-      // ACT: Play multiple turns and collect authentic memories
+      // ACT: Play multiple turns and track all cards
       for (let turn = 0; turn < 5; turn++) {
         const beforeSnap = await getDoc(roomRef);
         const beforeRoom = beforeSnap.data() as FirestoreRoom;
@@ -317,26 +319,29 @@ describe('gameService - Integration Tests with Firebase', () => {
         const afterSelectRoom = afterSelectSnap.data() as FirestoreRoom;
         const card = afterSelectRoom.current_card!;
 
-        // Track authentic memories
-        if (card.authenticity === 'authentic') {
-          authenticMemories.push(card.memory);
-        }
+        // Track what we expect
+        playedCards.push({ card, playedBy: currentPlayerId });
 
         // Claim the card
         await claimCard(ROOM_CODE, currentPlayerId);
       }
 
-      // ASSERT: All authentic memories should be in revealed_real_memories
+      // ASSERT: All cards should be in used_cards
       const finalSnap = await getDoc(roomRef);
       const finalRoom = finalSnap.data() as FirestoreRoom;
 
-      expect(finalRoom.revealed_real_memories).toHaveLength(authenticMemories.length);
-      authenticMemories.forEach(memory => {
-        expect(finalRoom.revealed_real_memories).toContain(memory);
+      expect(finalRoom.used_cards).toHaveLength(5);
+
+      // Verify each card is tracked correctly
+      finalRoom.used_cards.forEach((playedCard, index) => {
+        expect(playedCard.card).toEqual(playedCards[index].card);
+        expect(playedCard.playedBy).toBe(playedCards[index].playedBy);
+        expect(playedCard.multiplier).toBe(1);
+        expect(playedCard.wasForced).toBe(false);
       });
     });
 
-    it('should add authentic memory when opponent claims with 3x multiplier', async () => {
+    it('should add card to used_cards when opponent claims with 3x multiplier', async () => {
       // ARRANGE: Create room and go through reject flow
       await createTestRoom(ROOM_CODE, PLAYER_1_ID, PLAYER_2_ID, {
         turn_state: 'draw',
@@ -358,15 +363,54 @@ describe('gameService - Integration Tests with Firebase', () => {
       // ACT: Player 2 claims (with 3x multiplier)
       await opponentClaimCard(ROOM_CODE, PLAYER_2_ID);
 
-      // ASSERT: If card was authentic, should be in revealed_real_memories
+      // ASSERT: Card should be in used_cards with multiplier=3
       const finalSnap = await getDoc(roomRef);
       const finalRoom = finalSnap.data() as FirestoreRoom;
 
-      if (selectedCard.authenticity === 'authentic') {
-        expect(finalRoom.revealed_real_memories).toContain(selectedCard.memory);
-      } else {
-        expect(finalRoom.revealed_real_memories || []).not.toContain(selectedCard.memory);
-      }
+      expect(finalRoom.used_cards).toHaveLength(1);
+
+      const playedCard = finalRoom.used_cards[0];
+      expect(playedCard.card).toEqual(selectedCard);
+      expect(playedCard.playedBy).toBe(PLAYER_2_ID); // Opponent claimed it
+      expect(playedCard.multiplier).toBe(3); // 3x multiplier
+      expect(playedCard.wasForced).toBe(false); // Opponent chose to claim, not forced
+      expect(playedCard.playedAt).toBeDefined();
+    });
+
+    it('should track forced card in used_cards with wasForced=true when opponent rejects back', async () => {
+      // ARRANGE: Create room
+      await createTestRoom(ROOM_CODE, PLAYER_1_ID, PLAYER_2_ID, {
+        turn_state: 'draw',
+        turn: 0
+      });
+
+      const roomRef = doc(db, 'rooms', ROOM_CODE);
+
+      // Player 1 selects a card
+      await selectCard(ROOM_CODE, 0, PLAYER_1_ID);
+
+      const afterSelectSnap = await getDoc(roomRef);
+      const afterSelectRoom = afterSelectSnap.data() as FirestoreRoom;
+      const selectedCard = afterSelectRoom.current_card!;
+
+      // Player 1 rejects
+      await rejectCard(ROOM_CODE, PLAYER_1_ID);
+
+      // ACT: Player 2 rejects back (forces card to Player 1)
+      await opponentRejectBack(ROOM_CODE, PLAYER_2_ID);
+
+      // ASSERT: Card should be in used_cards with wasForced=true
+      const finalSnap = await getDoc(roomRef);
+      const finalRoom = finalSnap.data() as FirestoreRoom;
+
+      expect(finalRoom.used_cards).toHaveLength(1);
+
+      const playedCard = finalRoom.used_cards[0];
+      expect(playedCard.card).toEqual(selectedCard);
+      expect(playedCard.playedBy).toBe(PLAYER_1_ID); // Original player forced to take it
+      expect(playedCard.multiplier).toBe(3); // 3x multiplier
+      expect(playedCard.wasForced).toBe(true); // Card was FORCED back
+      expect(playedCard.playedAt).toBeDefined();
     });
   });
 

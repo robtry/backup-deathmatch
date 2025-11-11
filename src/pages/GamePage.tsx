@@ -271,7 +271,10 @@ export default function GamePage() {
   // Show game over screen when room status is 'finished'
   if (room?.status === 'finished' && user) {
     const isWinner = room.winner === user.id;
-    const memoryHistory = room.revealed_real_memories || [];
+    // Calculate memory history from used_cards (authentic cards only)
+    const memoryHistory = room.used_cards
+      ?.filter(playedCard => playedCard.card.authenticity === 'authentic')
+      .map(playedCard => playedCard.card.memory) || [];
 
     const handleBackToMenu = async () => {
       if (roomId && user) {

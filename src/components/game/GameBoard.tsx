@@ -23,15 +23,28 @@ export function GameBoard({
 }: GameBoardProps) {
   // Calculate game statistics
   const totalCards = 15; // Total cards in the game
-  const revealedCards = totalCards - room.memory_deck.length - (room.current_card ? 1 : 0);
 
-  // Count authentic cards in deck
+  // Calculate revealed cards (cards already played/used)
+  const usedCardsCount = room.used_cards?.length || 0;
+  const revealedCards = usedCardsCount;
+
+  // Calculate remaining cards (cards not yet played/revealed)
+  const remainingCards = totalCards - usedCardsCount;
+
+  // Count authentic cards in deck (cards not yet played)
   const authenticCount = room.memory_deck.filter(card => card.authenticity === 'authentic').length;
   const corruptedCount = room.memory_deck.filter(card => card.authenticity === 'corrupted').length;
   const fatalGlitchCount = room.memory_deck.filter(card => card.authenticity === 'fatalGlitch').length;
 
+  // Count revealed cards by type (from used_cards)
+  const revealedAuthentic = room.used_cards?.filter(playedCard => playedCard.card.authenticity === 'authentic').length || 0;
+  const revealedCorrupted = room.used_cards?.filter(playedCard => playedCard.card.authenticity === 'corrupted').length || 0;
+
   // Get memory history (authentic cards only - these are the "real" memories)
-  const memoryHistory: string[] = room.revealed_real_memories || [];
+  // Calculate from used_cards instead of relying on revealed_real_memories
+  const memoryHistory: string[] = room.used_cards
+    ?.filter(playedCard => playedCard.card.authenticity === 'authentic')
+    .map(playedCard => playedCard.card.memory) || [];
 
   // Determine current turn and phase
   const currentTurnPlayerId = room.order_players[room.turn % room.order_players.length];
@@ -79,9 +92,12 @@ export function GameBoard({
           showActions={showActions}
           totalCards={totalCards}
           revealedCards={revealedCards}
+          remainingCards={remainingCards}
           authenticCount={authenticCount}
           corruptedCount={corruptedCount}
           fatalGlitchCount={fatalGlitchCount}
+          revealedAuthentic={revealedAuthentic}
+          revealedCorrupted={revealedCorrupted}
           gameStatus={room.status}
           tableCards={room.table_cards}
           onCardSelect={onCardSelect}

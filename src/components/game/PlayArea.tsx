@@ -14,9 +14,12 @@ interface PlayAreaProps {
   showActions: boolean;
   totalCards: number;
   revealedCards: number;
+  remainingCards: number;
   authenticCount: number;
   corruptedCount: number;
   fatalGlitchCount: number;
+  revealedAuthentic: number;
+  revealedCorrupted: number;
   gameStatus: RoomStatus;
   tableCards: MemoryCard[];
   onCardSelect: (cardIndex: number) => void;
@@ -34,9 +37,12 @@ export function PlayArea({
   showActions,
   totalCards,
   revealedCards,
+  remainingCards,
   authenticCount,
   corruptedCount,
   fatalGlitchCount,
+  revealedAuthentic,
+  revealedCorrupted,
   gameStatus,
   tableCards,
   onCardSelect,
@@ -157,7 +163,15 @@ export function PlayArea({
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs">Restantes:</span>
-              <span className="font-bold text-xs">{totalCards - revealedCards}</span>
+              <span className="font-bold text-xs">{remainingCards}</span>
+            </div>
+            <div className="flex justify-between items-center pl-2">
+              <span className="text-xs text-green-500">→ Auténticas:</span>
+              <span className="font-bold text-xs text-green-500">{revealedAuthentic}</span>
+            </div>
+            <div className="flex justify-between items-center pl-2">
+              <span className="text-xs text-yellow-500">→ Corruptas:</span>
+              <span className="font-bold text-xs text-yellow-500">{revealedCorrupted}</span>
             </div>
           </div>
         </Card>
