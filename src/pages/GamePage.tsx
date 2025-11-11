@@ -7,11 +7,13 @@ import { toast } from '@/components/ui/8bit/toast';
 import { logger } from '@/lib/utils/logger';
 import { useAuthStore } from '@/stores/authStore';
 import { leaveRoom, startGame, completeIntro } from '@/services/roomService';
+import { selectCard, claimCard, rejectCard, opponentClaimCard, opponentRejectBack } from '@/services/gameService';
 import type { FirestoreRoom, PlayerInfo } from '@/types';
 import { LoadingState } from '@/components/LoadingState';
 import HealthBar from '@/components/ui/8bit/health-bar';
 import { GameIntro } from '@/components/GameIntro';
 import { GameBoard } from '@/components/game/GameBoard';
+import { MemoryCardModal } from '@/components/game/MemoryCardModal';
 
 export default function GamePage() {
   const { roomId } = useParams<{ roomId: string }>();
@@ -24,6 +26,7 @@ export default function GamePage() {
   const [players, setPlayers] = useState<PlayerInfo[]>([]);
   const [isLoadingRoom, setIsLoadingRoom] = useState(true);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const isLeavingRef = useRef(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -277,25 +280,109 @@ export default function GamePage() {
       );
     }
 
-    const handleClaim = () => {
-      logger.info('Player claims card', { userId: user.id, roomId }, 'GamePage');
-      // TODO: Implement claim logic
+    const handleCardSelect = async (cardIndex: number) => {
+      if (!roomId || !user) {
+        logger.warn('Cannot select card: missing roomId or user', { roomId, userId: user?.id }, 'GamePage');
+        return;
+      }
+
+      setIsProcessing(true);
+      try {
+        logger.info('Player selecting card', { userId: user.id, roomId, cardIndex }, 'GamePage');
+        await selectCard(roomId, cardIndex, user.id);
+        logger.info('Card selected successfully', { cardIndex }, 'GamePage');
+      } catch (error: any) {
+        logger.error('Failed to select card', error, 'GamePage');
+        const errorMessage = error instanceof Error ? error.message : 'Error al seleccionar la carta';
+        toast(errorMessage);
+      } finally {
+        setIsProcessing(false);
+      }
     };
 
-    const handleReject = () => {
-      logger.info('Player rejects card', { userId: user.id, roomId }, 'GamePage');
-      // TODO: Implement reject logic
+    const handleClaim = async () => {
+      if (!roomId || !user || !room) {
+        logger.warn('Cannot claim: missing data', { roomId, userId: user?.id }, 'GamePage');
+        return;
+      }
+
+      setIsProcessing(true);
+      try {
+        logger.info('Player claiming card', { userId: user.id, roomId, turnState: room.turn_state }, 'GamePage');
+
+        if (room.turn_state === 'decide') {
+          await claimCard(roomId, user.id);
+        } else if (room.turn_state === 'opponent_decide') {
+          await opponentClaimCard(roomId, user.id);
+        }
+
+        logger.info('Card claimed successfully', { turnState: room.turn_state }, 'GamePage');
+      } catch (error: any) {
+        logger.error('Failed to claim card', error, 'GamePage');
+        const errorMessage = error instanceof Error ? error.message : 'Error al reclamar la carta';
+        toast(errorMessage);
+      } finally {
+        setIsProcessing(false);
+      }
     };
+
+    const handleReject = async () => {
+      if (!roomId || !user || !room) {
+        logger.warn('Cannot reject: missing data', { roomId, userId: user?.id }, 'GamePage');
+        return;
+      }
+
+      setIsProcessing(true);
+      try {
+        logger.info('Player rejecting card', { userId: user.id, roomId, turnState: room.turn_state }, 'GamePage');
+
+        if (room.turn_state === 'decide') {
+          await rejectCard(roomId, user.id);
+        } else if (room.turn_state === 'opponent_decide') {
+          await opponentRejectBack(roomId, user.id);
+        }
+
+        logger.info('Card rejected successfully', { turnState: room.turn_state }, 'GamePage');
+      } catch (error: any) {
+        logger.error('Failed to reject card', error, 'GamePage');
+        const errorMessage = error instanceof Error ? error.message : 'Error al rechazar la carta';
+        toast(errorMessage);
+      } finally {
+        setIsProcessing(false);
+      }
+    };
+
+    // Determine if current user is the active player
+    const currentPlayerIndex = room.turn;
+    const currentPlayerId = room.order_players[currentPlayerIndex];
+    const isPlayerTurn = currentPlayerId === user.id;
 
     return (
-      <GameBoard
-        room={room}
-        currentPlayer={currentPlayerInfo}
-        opponent={opponentInfo}
-        userId={user.id}
-        onClaim={handleClaim}
-        onReject={handleReject}
-      />
+      <>
+        <GameBoard
+          room={room}
+          currentPlayer={currentPlayerInfo}
+          opponent={opponentInfo}
+          userId={user.id}
+          onClaim={handleClaim}
+          onReject={handleReject}
+          onCardSelect={handleCardSelect}
+        />
+
+        {/* Memory Card Decision Modal - Shows to BOTH players but with different visibility */}
+        <MemoryCardModal
+          isOpen={room.current_card !== null}
+          card={room.current_card}
+          turnState={room.turn_state}
+          currentMultiplier={room.current_multiplier}
+          isPlayerTurn={isPlayerTurn}
+          cardInitiator={room.card_initiator}
+          currentUserId={user.id}
+          onClaim={handleClaim}
+          onReject={handleReject}
+          isProcessing={isProcessing}
+        />
+      </>
     );
   }
 

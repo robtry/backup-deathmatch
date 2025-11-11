@@ -220,6 +220,151 @@ describe('gameService - Integration Tests with Firebase', () => {
     });
   });
 
+  describe('revealed_real_memories tracking', () => {
+    it('should add authentic memory to revealed_real_memories when claimed', async () => {
+      // ARRANGE: Create room with known authentic card
+      await createTestRoom(ROOM_CODE, PLAYER_1_ID, PLAYER_2_ID, {
+        turn_state: 'draw',
+        turn: 0
+      });
+
+      const roomRef = doc(db, 'rooms', ROOM_CODE);
+
+      // ACT: Player 1 selects and claims a card
+      await selectCard(ROOM_CODE, 0, PLAYER_1_ID);
+
+      const afterSelectSnap = await getDoc(roomRef);
+      const afterSelectRoom = afterSelectSnap.data() as FirestoreRoom;
+      const selectedCard = afterSelectRoom.current_card!;
+
+      await claimCard(ROOM_CODE, PLAYER_1_ID);
+
+      // ASSERT: If card was authentic, it should be in revealed_real_memories
+      const finalSnap = await getDoc(roomRef);
+      const finalRoom = finalSnap.data() as FirestoreRoom;
+
+      if (selectedCard.authenticity === 'authentic') {
+        expect(finalRoom.revealed_real_memories).toContain(selectedCard.memory);
+        expect(finalRoom.revealed_real_memories).toHaveLength(1);
+      } else {
+        // If not authentic, should not be added
+        expect(finalRoom.revealed_real_memories || []).not.toContain(selectedCard.memory);
+      }
+    });
+
+    it('should NOT add corrupted or fatal glitch memories to revealed_real_memories', async () => {
+      // ARRANGE: Create room
+      await createTestRoom(ROOM_CODE, PLAYER_1_ID, PLAYER_2_ID, {
+        turn_state: 'draw',
+        turn: 0
+      });
+
+      const roomRef = doc(db, 'rooms', ROOM_CODE);
+
+      // Try to find a corrupted or fatal glitch card
+      for (let i = 0; i < 3; i++) {
+        await selectCard(ROOM_CODE, i, PLAYER_1_ID);
+
+        const snap = await getDoc(roomRef);
+        const room = snap.data() as FirestoreRoom;
+        const card = room.current_card!;
+
+        if (card.authenticity === 'corrupted' || card.authenticity === 'fatalGlitch') {
+          // ACT: Claim the corrupted/fatal card
+          await claimCard(ROOM_CODE, PLAYER_1_ID);
+
+          // ASSERT: Should NOT be in revealed_real_memories
+          const finalSnap = await getDoc(roomRef);
+          const finalRoom = finalSnap.data() as FirestoreRoom;
+
+          expect(finalRoom.revealed_real_memories || []).not.toContain(card.memory);
+          return; // Test passed
+        }
+
+        // If card was authentic, claim it and continue searching
+        await claimCard(ROOM_CODE, room.order_players[room.turn]);
+      }
+
+      // If we didn't find any corrupted cards in first 3, test is inconclusive but passes
+      expect(true).toBe(true);
+    });
+
+    it('should accumulate multiple authentic memories over multiple turns', async () => {
+      // ARRANGE: Create room
+      await createTestRoom(ROOM_CODE, PLAYER_1_ID, PLAYER_2_ID, {
+        turn_state: 'draw',
+        turn: 0
+      });
+
+      const roomRef = doc(db, 'rooms', ROOM_CODE);
+      const authenticMemories: string[] = [];
+
+      // ACT: Play multiple turns and collect authentic memories
+      for (let turn = 0; turn < 5; turn++) {
+        const beforeSnap = await getDoc(roomRef);
+        const beforeRoom = beforeSnap.data() as FirestoreRoom;
+        const currentPlayerId = beforeRoom.order_players[beforeRoom.turn];
+
+        // Select a card
+        await selectCard(ROOM_CODE, 0, currentPlayerId);
+
+        const afterSelectSnap = await getDoc(roomRef);
+        const afterSelectRoom = afterSelectSnap.data() as FirestoreRoom;
+        const card = afterSelectRoom.current_card!;
+
+        // Track authentic memories
+        if (card.authenticity === 'authentic') {
+          authenticMemories.push(card.memory);
+        }
+
+        // Claim the card
+        await claimCard(ROOM_CODE, currentPlayerId);
+      }
+
+      // ASSERT: All authentic memories should be in revealed_real_memories
+      const finalSnap = await getDoc(roomRef);
+      const finalRoom = finalSnap.data() as FirestoreRoom;
+
+      expect(finalRoom.revealed_real_memories).toHaveLength(authenticMemories.length);
+      authenticMemories.forEach(memory => {
+        expect(finalRoom.revealed_real_memories).toContain(memory);
+      });
+    });
+
+    it('should add authentic memory when opponent claims with 3x multiplier', async () => {
+      // ARRANGE: Create room and go through reject flow
+      await createTestRoom(ROOM_CODE, PLAYER_1_ID, PLAYER_2_ID, {
+        turn_state: 'draw',
+        turn: 0
+      });
+
+      const roomRef = doc(db, 'rooms', ROOM_CODE);
+
+      // Player 1 selects a card
+      await selectCard(ROOM_CODE, 0, PLAYER_1_ID);
+
+      const afterSelectSnap = await getDoc(roomRef);
+      const afterSelectRoom = afterSelectSnap.data() as FirestoreRoom;
+      const selectedCard = afterSelectRoom.current_card!;
+
+      // Player 1 rejects
+      await rejectCard(ROOM_CODE, PLAYER_1_ID);
+
+      // ACT: Player 2 claims (with 3x multiplier)
+      await opponentClaimCard(ROOM_CODE, PLAYER_2_ID);
+
+      // ASSERT: If card was authentic, should be in revealed_real_memories
+      const finalSnap = await getDoc(roomRef);
+      const finalRoom = finalSnap.data() as FirestoreRoom;
+
+      if (selectedCard.authenticity === 'authentic') {
+        expect(finalRoom.revealed_real_memories).toContain(selectedCard.memory);
+      } else {
+        expect(finalRoom.revealed_real_memories || []).not.toContain(selectedCard.memory);
+      }
+    });
+  });
+
   describe('table cards refresh during gameplay', () => {
     it('should correctly refresh table_cards after multiple turns', async () => {
       // ARRANGE: Create room

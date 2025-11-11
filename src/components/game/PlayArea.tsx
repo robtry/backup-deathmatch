@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/8bit/button';
 import { Card } from '@/components/ui/8bit/card';
-import type { MemoryCard, RoomStatus } from '@/types';
+import type { MemoryCard, RoomStatus, TurnState } from '@/types';
 
 interface PlayAreaProps {
   deckSize: number;
@@ -18,6 +18,10 @@ interface PlayAreaProps {
   corruptedCount: number;
   fatalGlitchCount: number;
   gameStatus: RoomStatus;
+  tableCards: MemoryCard[];
+  onCardSelect: (cardIndex: number) => void;
+  canSelectCard: boolean;
+  turnState: TurnState;
 }
 
 export function PlayArea({
@@ -33,7 +37,11 @@ export function PlayArea({
   authenticCount,
   corruptedCount,
   fatalGlitchCount,
-  gameStatus
+  gameStatus,
+  tableCards,
+  onCardSelect,
+  canSelectCard,
+  turnState
 }: PlayAreaProps) {
   // Animation variants for the deck container
   const deckContainerVariants = {
@@ -187,50 +195,68 @@ export function PlayArea({
           animate={gameStatus === 'playing' ? 'visible' : 'hidden'}
           style={{ perspective: 1000 }} // Enable 3D transforms for card flip
         >
-          {[0, 1, 2].map((index) => (
-            <motion.div
-              key={index}
-              variants={boardCardVariants}
-              className="relative group cursor-pointer"
-              whileHover={{
-                scale: 1.05,
-                y: -10, // Lift card on hover
-                transition: { duration: 0.2 },
-              }}
-              whileTap={{
-                scale: 0.95,
-                transition: { duration: 0.1 },
-              }}
-            >
-              <Card className="w-32 h-48 bg-gradient-to-br from-primary/30 to-primary/10 border-2 border-primary flex items-center justify-center overflow-hidden">
-                {/* Pixel pattern background */}
-                <div
-                  className="absolute inset-0 opacity-40"
-                  style={{
-                    backgroundImage: `
-                      repeating-linear-gradient(
-                        0deg,
-                        transparent,
-                        transparent 2px,
-                        rgba(255, 255, 255, 0.1) 2px,
-                        rgba(255, 255, 255, 0.1) 4px
-                      ),
-                      repeating-linear-gradient(
-                        90deg,
-                        transparent,
-                        transparent 2px,
-                        rgba(255, 255, 255, 0.1) 2px,
-                        rgba(255, 255, 255, 0.1) 4px
-                      )
-                    `,
-                    backgroundSize: '4px 4px'
-                  }}
-                />
-                {/* Question mark */}
-                <div className="text-6xl opacity-50 relative z-10">?</div>
-              </Card>
-            </motion.div>
-          ))}
+          {tableCards.map((card, index) => {
+            const isClickable = canSelectCard && turnState === 'draw';
+
+            return (
+              <motion.div
+                key={index}
+                variants={boardCardVariants}
+                className={`relative group ${isClickable ? 'cursor-pointer' : 'cursor-not-allowed opacity-75'}`}
+                whileHover={isClickable ? {
+                  scale: 1.05,
+                  y: -10, // Lift card on hover
+                  transition: { duration: 0.2 },
+                } : {}}
+                whileTap={isClickable ? {
+                  scale: 0.95,
+                  transition: { duration: 0.1 },
+                } : {}}
+                onClick={() => {
+                  if (isClickable) {
+                    onCardSelect(index);
+                  }
+                }}
+              >
+                <Card className="w-32 h-48 bg-gradient-to-br from-primary/30 to-primary/10 border-2 border-primary flex items-center justify-center overflow-hidden">
+                  {/* Pixel pattern background */}
+                  <div
+                    className="absolute inset-0 opacity-40"
+                    style={{
+                      backgroundImage: `
+                        repeating-linear-gradient(
+                          0deg,
+                          transparent,
+                          transparent 2px,
+                          rgba(255, 255, 255, 0.1) 2px,
+                          rgba(255, 255, 255, 0.1) 4px
+                        ),
+                        repeating-linear-gradient(
+                          90deg,
+                          transparent,
+                          transparent 2px,
+                          rgba(255, 255, 255, 0.1) 2px,
+                          rgba(255, 255, 255, 0.1) 4px
+                        )
+                      `,
+                      backgroundSize: '4px 4px'
+                    }}
+                  />
+                  {/* Question mark - Card remains hidden until selected */}
+                  <div className="text-6xl opacity-50 relative z-10">?</div>
+
+                  {/* Hover hint when clickable */}
+                  {isClickable && (
+                    <div className="absolute bottom-2 left-0 right-0 text-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="text-xs bg-primary/80 px-2 py-1 rounded">
+                        SELECCIONAR
+                      </span>
+                    </div>
+                  )}
+                </Card>
+              </motion.div>
+            );
+          })}
         </motion.div>
 
         {/* Right: Animated Deck */}

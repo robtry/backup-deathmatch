@@ -112,7 +112,8 @@ export const createRoom = async (userId: string, roomCode?: string): Promise<str
         turn_state: 'draw', // Initial state: waiting for card selection
         selected_card_index: null, // No card selected yet
         current_multiplier: 1, // Default multiplier
-        card_initiator: null // No initiator yet
+        card_initiator: null, // No initiator yet
+        revealed_real_memories: [] // Track authentic memories that have been claimed
       };
 
       roomLogger.debug('Creating room document', {

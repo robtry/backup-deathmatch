@@ -360,6 +360,15 @@ export const claimCard = async (
       // Calculate next turn
       const nextTurn = (roomData.turn + 1) % roomData.order_players.length;
 
+      // Add authentic memory to revealed_real_memories if it's authentic
+      const updatedRevealedMemories = [...(roomData.revealed_real_memories || [])];
+      if (roomData.current_card.authenticity === 'authentic') {
+        updatedRevealedMemories.push(roomData.current_card.memory);
+        roomLogger.info('Authentic memory added to revealed list', {
+          memory: roomData.current_card.memory
+        });
+      }
+
       // Update room: apply points, refresh cards, move to next turn
       transaction.update(roomRef, {
         players: updatedPlayers,
@@ -371,6 +380,7 @@ export const claimCard = async (
         selected_card_index: null,
         current_multiplier: 1,
         card_initiator: null,
+        revealed_real_memories: updatedRevealedMemories,
         lastUpdate: Timestamp.now()
       });
 
@@ -544,6 +554,15 @@ export const opponentClaimCard = async (
       // Calculate next turn
       const nextTurn = (roomData.turn + 1) % roomData.order_players.length;
 
+      // Add authentic memory to revealed_real_memories if it's authentic
+      const updatedRevealedMemories = [...(roomData.revealed_real_memories || [])];
+      if (roomData.current_card.authenticity === 'authentic') {
+        updatedRevealedMemories.push(roomData.current_card.memory);
+        roomLogger.info('Authentic memory added to revealed list (opponent claim)', {
+          memory: roomData.current_card.memory
+        });
+      }
+
       // Update room: apply points, refresh cards, move to next turn
       transaction.update(roomRef, {
         players: updatedPlayers,
@@ -555,6 +574,7 @@ export const opponentClaimCard = async (
         selected_card_index: null,
         current_multiplier: 1,
         card_initiator: null,
+        revealed_real_memories: updatedRevealedMemories,
         lastUpdate: Timestamp.now()
       });
 

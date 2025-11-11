@@ -80,6 +80,7 @@ export const createMockRoom = (
     selected_card_index: null,
     current_multiplier: 1,
     card_initiator: null,
+    revealed_real_memories: [],
     ...overrides
   };
 };

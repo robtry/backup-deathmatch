@@ -91,6 +91,7 @@ export interface FirestoreRoom {
   selected_card_index: number | null; // Index of the card selected from table_cards
   current_multiplier: number; // Points multiplier (1 or 3)
   card_initiator: string | null; // UserId of the player who originally selected the card
+  revealed_real_memories: string[]; // Array of authentic memory texts that have been claimed
 }
 
 // Form types
