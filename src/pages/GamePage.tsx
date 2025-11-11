@@ -14,6 +14,7 @@ import HealthBar from '@/components/ui/8bit/health-bar';
 import { GameIntro } from '@/components/GameIntro';
 import { GameBoard } from '@/components/game/GameBoard';
 import { MemoryCardModal } from '@/components/game/MemoryCardModal';
+import { GameOver } from '@/components/GameOver';
 
 export default function GamePage() {
   const { roomId } = useParams<{ roomId: string }>();
@@ -265,6 +266,37 @@ export default function GamePage() {
   // Show intro screen when room status is 'intro'
   if (room?.status === 'intro') {
     return <GameIntro onComplete={handleIntroComplete} />;
+  }
+
+  // Show game over screen when room status is 'finished'
+  if (room?.status === 'finished' && user) {
+    const isWinner = room.winner === user.id;
+    const memoryHistory = room.revealed_real_memories || [];
+
+    const handleBackToMenu = async () => {
+      if (roomId && user) {
+        try {
+          logger.info('Leaving room from game over', { userId: user.id, roomId }, 'GamePage');
+          await leaveRoom(user.id, roomId);
+          clearCurrentRoom(); // Clear from local auth store
+          logger.info('Successfully left room, navigating to menu', { roomId }, 'GamePage');
+          navigate('/menu');
+        } catch (error) {
+          logger.error('Failed to leave room from game over', error, 'GamePage');
+          // Even if it fails, try to navigate
+          clearCurrentRoom();
+          navigate('/menu');
+        }
+      }
+    };
+
+    return (
+      <GameOver
+        isWinner={isWinner}
+        memoryHistory={memoryHistory}
+        onBackToMenu={handleBackToMenu}
+      />
+    );
   }
 
   // Show game board when room status is 'playing'

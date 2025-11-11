@@ -156,7 +156,7 @@ export const getRemainingCardsCount = (
 /**
  * Checks if a player has won the game
  * Win condition: Player reaches +10 points
- * Lose condition: Player reaches -3 points or below
+ * Lose condition: Player reaches -10 points or below
  * @param players - Players object with integrity values
  * @returns Object with winner info { hasWinner: boolean, winnerId: string | null, reason: string }
  */
@@ -184,12 +184,12 @@ export const checkVictoryCondition = (
     }
   }
 
-  // Check if any player reached -3 or below (defeat)
+  // Check if any player reached -10 or below (defeat)
   for (const playerId of orderPlayers) {
-    if (players[playerId].integrity <= -3) {
+    if (players[playerId].integrity <= -10) {
       // Winner is the OTHER player
       const winnerId = orderPlayers.find(id => id !== playerId)!;
-      roomLogger.info('Victory detected: Player reached -3 or below', {
+      roomLogger.info('Victory detected: Player reached -10 or below', {
         loserId: playerId,
         loserIntegrity: players[playerId].integrity,
         winnerId,
@@ -369,20 +369,47 @@ export const claimCard = async (
         });
       }
 
-      // Update room: apply points, refresh cards, move to next turn
-      transaction.update(roomRef, {
-        players: updatedPlayers,
-        table_cards: tableCards,
-        cards_drawn: newCardsDrawn,
-        turn: nextTurn,
-        turn_state: 'draw' as TurnState,
-        current_card: null,
-        selected_card_index: null,
-        current_multiplier: 1,
-        card_initiator: null,
-        revealed_real_memories: updatedRevealedMemories,
-        lastUpdate: Timestamp.now()
-      });
+      // Check victory condition
+      const victoryCheck = checkVictoryCondition(updatedPlayers, roomData.order_players);
+
+      if (victoryCheck.hasWinner) {
+        // Game over - update room with winner info
+        roomLogger.info('Game ended - victory condition met', {
+          winnerId: victoryCheck.winnerId,
+          reason: victoryCheck.reason
+        });
+
+        transaction.update(roomRef, {
+          players: updatedPlayers,
+          table_cards: tableCards,
+          cards_drawn: newCardsDrawn,
+          status: 'finished',
+          winner: victoryCheck.winnerId,
+          win_reason: victoryCheck.reason,
+          finishedAt: Timestamp.now(),
+          current_card: null,
+          selected_card_index: null,
+          current_multiplier: 1,
+          card_initiator: null,
+          revealed_real_memories: updatedRevealedMemories,
+          lastUpdate: Timestamp.now()
+        });
+      } else {
+        // Game continues - update room normally
+        transaction.update(roomRef, {
+          players: updatedPlayers,
+          table_cards: tableCards,
+          cards_drawn: newCardsDrawn,
+          turn: nextTurn,
+          turn_state: 'draw' as TurnState,
+          current_card: null,
+          selected_card_index: null,
+          current_multiplier: 1,
+          card_initiator: null,
+          revealed_real_memories: updatedRevealedMemories,
+          lastUpdate: Timestamp.now()
+        });
+      }
 
       roomLogger.info('Card claimed successfully', {
         roomCode,
@@ -563,20 +590,47 @@ export const opponentClaimCard = async (
         });
       }
 
-      // Update room: apply points, refresh cards, move to next turn
-      transaction.update(roomRef, {
-        players: updatedPlayers,
-        table_cards: tableCards,
-        cards_drawn: newCardsDrawn,
-        turn: nextTurn,
-        turn_state: 'draw' as TurnState,
-        current_card: null,
-        selected_card_index: null,
-        current_multiplier: 1,
-        card_initiator: null,
-        revealed_real_memories: updatedRevealedMemories,
-        lastUpdate: Timestamp.now()
-      });
+      // Check victory condition
+      const victoryCheck = checkVictoryCondition(updatedPlayers, roomData.order_players);
+
+      if (victoryCheck.hasWinner) {
+        // Game over - update room with winner info
+        roomLogger.info('Game ended - victory condition met (opponent claim)', {
+          winnerId: victoryCheck.winnerId,
+          reason: victoryCheck.reason
+        });
+
+        transaction.update(roomRef, {
+          players: updatedPlayers,
+          table_cards: tableCards,
+          cards_drawn: newCardsDrawn,
+          status: 'finished',
+          winner: victoryCheck.winnerId,
+          win_reason: victoryCheck.reason,
+          finishedAt: Timestamp.now(),
+          current_card: null,
+          selected_card_index: null,
+          current_multiplier: 1,
+          card_initiator: null,
+          revealed_real_memories: updatedRevealedMemories,
+          lastUpdate: Timestamp.now()
+        });
+      } else {
+        // Game continues - update room normally
+        transaction.update(roomRef, {
+          players: updatedPlayers,
+          table_cards: tableCards,
+          cards_drawn: newCardsDrawn,
+          turn: nextTurn,
+          turn_state: 'draw' as TurnState,
+          current_card: null,
+          selected_card_index: null,
+          current_multiplier: 1,
+          card_initiator: null,
+          revealed_real_memories: updatedRevealedMemories,
+          lastUpdate: Timestamp.now()
+        });
+      }
 
       roomLogger.info('Opponent claimed card successfully (blind)', {
         roomCode,
@@ -678,19 +732,56 @@ export const opponentRejectBack = async (
       // Calculate next turn
       const nextTurn = (roomData.turn + 1) % roomData.order_players.length;
 
-      // Update room: apply points to original player, refresh cards, move to next turn
-      transaction.update(roomRef, {
-        players: updatedPlayers,
-        table_cards: tableCards,
-        cards_drawn: newCardsDrawn,
-        turn: nextTurn,
-        turn_state: 'draw' as TurnState,
-        current_card: null,
-        selected_card_index: null,
-        current_multiplier: 1,
-        card_initiator: null,
-        lastUpdate: Timestamp.now()
-      });
+      // Add authentic memory to revealed_real_memories if it's authentic
+      const updatedRevealedMemories = [...(roomData.revealed_real_memories || [])];
+      if (roomData.current_card.authenticity === 'authentic') {
+        updatedRevealedMemories.push(roomData.current_card.memory);
+        roomLogger.info('Authentic memory added to revealed list (reject back)', {
+          memory: roomData.current_card.memory
+        });
+      }
+
+      // Check victory condition
+      const victoryCheck = checkVictoryCondition(updatedPlayers, roomData.order_players);
+
+      if (victoryCheck.hasWinner) {
+        // Game over - update room with winner info
+        roomLogger.info('Game ended - victory condition met (reject back)', {
+          winnerId: victoryCheck.winnerId,
+          reason: victoryCheck.reason
+        });
+
+        transaction.update(roomRef, {
+          players: updatedPlayers,
+          table_cards: tableCards,
+          cards_drawn: newCardsDrawn,
+          status: 'finished',
+          winner: victoryCheck.winnerId,
+          win_reason: victoryCheck.reason,
+          finishedAt: Timestamp.now(),
+          current_card: null,
+          selected_card_index: null,
+          current_multiplier: 1,
+          card_initiator: null,
+          revealed_real_memories: updatedRevealedMemories,
+          lastUpdate: Timestamp.now()
+        });
+      } else {
+        // Game continues - update room normally
+        transaction.update(roomRef, {
+          players: updatedPlayers,
+          table_cards: tableCards,
+          cards_drawn: newCardsDrawn,
+          turn: nextTurn,
+          turn_state: 'draw' as TurnState,
+          current_card: null,
+          selected_card_index: null,
+          current_multiplier: 1,
+          card_initiator: null,
+          revealed_real_memories: updatedRevealedMemories,
+          lastUpdate: Timestamp.now()
+        });
+      }
 
       roomLogger.info('Card rejected back, forced to original player', {
         roomCode,

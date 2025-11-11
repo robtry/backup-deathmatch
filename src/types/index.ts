@@ -92,6 +92,8 @@ export interface FirestoreRoom {
   current_multiplier: number; // Points multiplier (1 or 3)
   card_initiator: string | null; // UserId of the player who originally selected the card
   revealed_real_memories: string[]; // Array of authentic memory texts that have been claimed
+  winner?: string | null; // UserId of the winner when game is finished
+  win_reason?: string; // Reason for victory ('reached_10_points' | 'opponent_defeated')
 }
 
 // Form types

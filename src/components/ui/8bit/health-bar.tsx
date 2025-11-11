@@ -5,12 +5,14 @@ interface ManaBarProps extends React.ComponentProps<"div"> {
   props?: BitProgressProps;
   variant?: "retro" | "default";
   value?: number;
+  progressBg?: string;
 }
 
 export default function HealthBar({
   className,
   variant,
   value,
+  progressBg = "bg-red-500",
   ...props
 }: ManaBarProps) {
   return (
@@ -19,7 +21,7 @@ export default function HealthBar({
       value={value}
       variant={variant}
       className={className}
-      progressBg="bg-red-500"
+      progressBg={progressBg}
     />
   );
 }

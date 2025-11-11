@@ -261,9 +261,14 @@ describe('gameService - Integration Tests with Firebase', () => {
 
       const roomRef = doc(db, 'rooms', ROOM_CODE);
 
-      // Try to find a corrupted or fatal glitch card
-      for (let i = 0; i < 3; i++) {
-        await selectCard(ROOM_CODE, i, PLAYER_1_ID);
+      // Try to find a corrupted or fatal glitch card by checking multiple turns
+      for (let turnAttempt = 0; turnAttempt < 6; turnAttempt++) {
+        const beforeSnap = await getDoc(roomRef);
+        const beforeRoom = beforeSnap.data() as FirestoreRoom;
+        const currentPlayerId = beforeRoom.order_players[beforeRoom.turn];
+
+        // Select first available card
+        await selectCard(ROOM_CODE, 0, currentPlayerId);
 
         const snap = await getDoc(roomRef);
         const room = snap.data() as FirestoreRoom;
@@ -271,7 +276,7 @@ describe('gameService - Integration Tests with Firebase', () => {
 
         if (card.authenticity === 'corrupted' || card.authenticity === 'fatalGlitch') {
           // ACT: Claim the corrupted/fatal card
-          await claimCard(ROOM_CODE, PLAYER_1_ID);
+          await claimCard(ROOM_CODE, currentPlayerId);
 
           // ASSERT: Should NOT be in revealed_real_memories
           const finalSnap = await getDoc(roomRef);
@@ -282,10 +287,10 @@ describe('gameService - Integration Tests with Firebase', () => {
         }
 
         // If card was authentic, claim it and continue searching
-        await claimCard(ROOM_CODE, room.order_players[room.turn]);
+        await claimCard(ROOM_CODE, currentPlayerId);
       }
 
-      // If we didn't find any corrupted cards in first 3, test is inconclusive but passes
+      // If we didn't find any corrupted cards in first 6 turns, test is inconclusive but passes
       expect(true).toBe(true);
     });
 
