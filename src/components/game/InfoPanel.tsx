@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/8bit/card';
 import HealthBar from '@/components/ui/8bit/health-bar';
 import type { PlayerInfo } from '@/types';
@@ -17,6 +18,16 @@ export function InfoPanel({
   memoryHistory,
   isPlayerTurn
 }: InfoPanelProps) {
+  // Ref for auto-scrolling to latest memory
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when new memories are added
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [memoryHistory.length]);
+
   // Convert integrity values from range [-10, 10] to percentage [0, 100]
   const normalizeIntegrity = (value: number): number => {
     // Clamp value between -10 and 10
@@ -29,7 +40,7 @@ export function InfoPanel({
   const opponentPercentage = normalizeIntegrity(opponent.integrity);
 
   return (
-    <div className="h-full p-4 flex flex-col gap-4 overflow-hidden">
+    <div className="h-full p-3 flex flex-col gap-3 overflow-hidden">
       {/* Top row: Current phase */}
       <Card className="p-1.5 flex-shrink-0">
         <div className="flex items-center justify-center">
@@ -39,10 +50,10 @@ export function InfoPanel({
         </div>
       </Card>
 
-      {/* Second row: 3 columns - Integrities+Memories, Items (2 cols) */}
-      <div className="grid grid-cols-3 gap-4 flex-1 min-h-0">
-        {/* Left column: Integrities and Memory history stacked */}
-        <div className="flex flex-col gap-4 min-h-0">
+      {/* Second row: 3 columns - Integrities+Items, Memories (2 cols) */}
+      <div className="grid grid-cols-3 gap-3 flex-1 min-h-0">
+        {/* Left column: Integrities and Items stacked */}
+        <div className="flex flex-col gap-3 min-h-0">
           {/* Integrities */}
           <Card className="p-2 flex-shrink-0">
             <div className="flex flex-col gap-2">
@@ -64,41 +75,42 @@ export function InfoPanel({
             </div>
           </Card>
 
-          {/* Memory history below */}
-          <Card className="p-3 flex-1 flex flex-col overflow-hidden min-h-0">
-            <h3 className="text-sm font-bold mb-3 flex-shrink-0">Memorias Reales</h3>
-            <div
-              className="space-y-2 overflow-y-scroll flex-1 min-h-0 pr-2"
-              style={{
-                scrollbarWidth: 'thin',
-                scrollbarColor: 'hsl(var(--primary)) hsl(var(--secondary) / 0.2)'
-              }}
-            >
-              {memoryHistory.length === 0 ? (
-                <p className="text-xs text-muted-foreground italic text-center py-4">
-                  No hay memorias reales reveladas aún
-                </p>
-              ) : (
-                memoryHistory.map((memory, index) => (
-                  <div
-                    key={index}
-                    className="text-xs p-2 bg-secondary/50 rounded border border-primary/20"
-                  >
-                    <span className="font-bold text-green-500">{index + 1}.</span> {memory}
-                  </div>
-                ))
-              )}
+          {/* Items below */}
+          <Card className="p-2 flex-1 flex flex-col overflow-hidden min-h-0">
+            <h3 className="text-sm font-bold mb-2 flex-shrink-0">Items</h3>
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground italic text-center py-4">
+                No hay items disponibles aún
+              </p>
             </div>
           </Card>
         </div>
 
-        {/* Right: Items (spanning 2 columns) */}
-        <Card className="p-3 col-span-2">
-          <h3 className="text-sm font-bold mb-3">Items</h3>
-          <div className="space-y-2">
-            <p className="text-xs text-muted-foreground italic text-center py-8">
-              No hay items disponibles aún
-            </p>
+        {/* Right: Memory history (spanning 2 columns) */}
+        <Card className="p-2 col-span-2 flex flex-col overflow-hidden min-h-0">
+          <h3 className="text-sm font-bold mb-2 flex-shrink-0">Memorias Reales</h3>
+          <div
+            ref={scrollRef}
+            className="space-y-2 overflow-y-scroll flex-1 min-h-0 pr-2"
+            style={{
+              scrollbarWidth: 'thin',
+              scrollbarColor: 'hsl(var(--primary)) hsl(var(--secondary) / 0.2)'
+            }}
+          >
+            {memoryHistory.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic text-center py-4">
+                No hay memorias reales reveladas aún
+              </p>
+            ) : (
+              memoryHistory.map((memory, index) => (
+                <div
+                  key={index}
+                  className="text-xs p-2 bg-secondary/50 rounded border border-primary/20"
+                >
+                  <span className="font-bold text-green-500">{index + 1}.</span> {memory}
+                </div>
+              ))
+            )}
           </div>
         </Card>
       </div>

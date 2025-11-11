@@ -79,8 +79,8 @@ export function GameBoard({
 
   return (
     <div className="h-screen w-full flex flex-col">
-      {/* Top half: Play area with deck and revealed card */}
-      <div className="h-1/2 bg-background border-b-4 border-primary">
+      {/* Top section: Play area with deck and revealed card (2/3 height) */}
+      <div className="h-2/3 bg-background border-b-4 border-primary">
         <PlayArea
           deckSize={remainingDeckSize}
           currentCard={room.current_card}
@@ -106,8 +106,8 @@ export function GameBoard({
         />
       </div>
 
-      {/* Bottom half: Info panel with stats and history */}
-      <div className="h-1/2 bg-secondary/20">
+      {/* Bottom section: Info panel with stats and history (1/3 height) */}
+      <div className="h-1/3 bg-secondary/20">
         <InfoPanel
           currentPlayer={currentPlayer}
           opponent={opponent}
