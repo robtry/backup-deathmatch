@@ -61,7 +61,13 @@ export const useRoomStore = create<RoomState>((set, get) => ({
             orderPlayers: data.order_players || [],
             turn: data.turn || 0,
             memoryDeck: data.memory_deck || [],
-            currentCard: data.current_card || null
+            currentCard: data.current_card || null,
+            tableCards: data.table_cards || [],
+            cardsDrawn: data.cards_drawn || 0,
+            turnState: data.turn_state || 'draw',
+            selectedCardIndex: data.selected_card_index ?? null,
+            currentMultiplier: data.current_multiplier || 1,
+            cardInitiator: data.card_initiator || null
           };
 
           set({ room, loading: false, error: null });
@@ -107,7 +113,13 @@ export const useRoomStore = create<RoomState>((set, get) => ({
         orderPlayers: [userId],
         turn: 0,
         memoryDeck: [],
-        currentCard: null
+        currentCard: null,
+        tableCards: [],
+        cardsDrawn: 0,
+        turnState: 'draw',
+        selectedCardIndex: null,
+        currentMultiplier: 1,
+        cardInitiator: null
       };
 
       await setDoc(roomRef, {

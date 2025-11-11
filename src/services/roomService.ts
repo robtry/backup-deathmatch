@@ -11,6 +11,7 @@ import {
 import { db } from '@/lib/firebase/config';
 import { roomLogger } from '@/lib/utils/logger';
 import { generateGameDeck } from './deckService';
+import { initializeTableCards } from './gameService';
 import type { FirestoreRoom, RoomStatus } from '@/types';
 
 // Custom alphabet for room codes (no confusing characters: 0/O, 1/I)
@@ -68,6 +69,10 @@ export const createRoom = async (userId: string, roomCode?: string): Promise<str
     const memoryDeck = await generateGameDeck();
     roomLogger.info('Game deck generated', { roomCode: finalRoomCode, deckSize: memoryDeck.length });
 
+    // Initialize table cards with first 3 cards from the deck
+    const tableCards = initializeTableCards(memoryDeck);
+    roomLogger.info('Table cards initialized', { roomCode: finalRoomCode, tableCardsCount: tableCards.length });
+
     // Use transaction to ensure atomicity (room creation + user update)
     const result = await runTransaction(db, async (transaction) => {
       const roomRef = doc(db, 'rooms', finalRoomCode);
@@ -101,7 +106,13 @@ export const createRoom = async (userId: string, roomCode?: string): Promise<str
         order_players: [userId], // Creator is first player
         turn: 0, // First player's turn
         memory_deck: memoryDeck, // Populated with 15 random cards
-        current_card: null
+        current_card: null,
+        table_cards: tableCards, // First 3 cards visible on the table
+        cards_drawn: 3, // 3 cards already drawn for the table
+        turn_state: 'draw', // Initial state: waiting for card selection
+        selected_card_index: null, // No card selected yet
+        current_multiplier: 1, // Default multiplier
+        card_initiator: null // No initiator yet
       };
 
       roomLogger.debug('Creating room document', {

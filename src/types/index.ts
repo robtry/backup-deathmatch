@@ -45,6 +45,9 @@ export interface PlayerInfo {
 // Room types
 export type RoomStatus = 'waiting' | 'intro' | 'playing' | 'finished';
 
+// Turn state types
+export type TurnState = 'draw' | 'decide' | 'opponent_decide' | 'reveal';
+
 export interface Room {
   id: string;
   players: Player[];
@@ -56,6 +59,12 @@ export interface Room {
   turn: number;
   memoryDeck: MemoryCard[];
   currentCard: MemoryCard | null;
+  tableCards: MemoryCard[]; // 3 cards visible on the table
+  cardsDrawn: number; // Number of cards drawn from memory_deck
+  turnState: TurnState; // Current turn state (draw, decide, opponent_decide, reveal)
+  selectedCardIndex: number | null; // Index of the card selected from table_cards
+  currentMultiplier: number; // Points multiplier (1 or 3)
+  cardInitiator: string | null; // UserId of the player who originally selected the card
 }
 
 // Firestore-specific types (with snake_case to match database schema)
@@ -76,6 +85,12 @@ export interface FirestoreRoom {
   turn: number;
   memory_deck: MemoryCard[];
   current_card: MemoryCard | null;
+  table_cards: MemoryCard[]; // 3 cards visible on the table
+  cards_drawn: number; // Number of cards drawn from memory_deck
+  turn_state: TurnState; // Current turn state (draw, decide, opponent_decide, reveal)
+  selected_card_index: number | null; // Index of the card selected from table_cards
+  current_multiplier: number; // Points multiplier (1 or 3)
+  card_initiator: string | null; // UserId of the player who originally selected the card
 }
 
 // Form types
