@@ -3,27 +3,32 @@ import { getAuth, connectAuthEmulator, setPersistence, browserLocalPersistence }
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { firestoreLogger } from '@/lib/utils/logger';
 
-// Firebase configuration for emulators
+// Firebase configuration - these keys are safe to be public
+// Security is handled by Firestore Rules and Auth, not by hiding API keys
 const firebaseConfig = {
-  apiKey: "demo-key",
+  apiKey: "AIzaSyCpNS8DjCVLdaN6WXELgMpeMepQz4SCddY",
   authDomain: "backup-deathmatch.firebaseapp.com",
   projectId: "backup-deathmatch",
-  storageBucket: "backup-deathmatch.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef123456"
+  storageBucket: "backup-deathmatch.firebasestorage.app",
+  messagingSenderId: "246277781651",
+  appId: "1:246277781651:web:02c05b1f6b645b2ef6b566",
+  measurementId: "G-N11J7QCFH1"
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore FIRST and connect to emulator BEFORE any other operation
+// Initialize Firestore
 const db = getFirestore(app);
 
 // Initialize Auth
 const auth = getAuth(app);
 
-// Connect to emulators ONLY in development mode
-if (import.meta.env.DEV) {
+// Check if we should use emulators
+// In development mode AND emulators are running (check via environment or default to true in dev)
+const useEmulators = import.meta.env.DEV && import.meta.env.VITE_USE_EMULATORS !== 'false';
+
+if (useEmulators) {
   try {
     connectFirestoreEmulator(db, 'localhost', 8080);
     firestoreLogger.info('Connected to Firestore emulator at localhost:8080');

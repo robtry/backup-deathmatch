@@ -1,3 +1,4 @@
+import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -25,6 +26,12 @@ export function RegisterForm({
   const navigate = useNavigate();
   const { register: registerUser, loading, error } = useAuthStore();
 
+  // Initialize state directly from sessionStorage (runs on every mount)
+  // This handles the case where component remounts after auth state changes
+  const [verificationEmail, setVerificationEmail] = React.useState<string | null>(
+    () => sessionStorage.getItem('pendingVerificationEmail')
+  );
+
   const {
     register,
     handleSubmit,
@@ -36,11 +43,55 @@ export function RegisterForm({
   const onSubmit = async (data: RegisterFormData) => {
     try {
       await registerUser(data.email, data.password, data.name);
-      navigate('/menu');
-    } catch (error) {
-      authLogger.error('Register error', error);
+    } catch (error: any) {
+      if (error.message === 'VERIFICATION_EMAIL_SENT') {
+        // Update local state to show verification screen
+        setVerificationEmail(data.email);
+      } else {
+        authLogger.error('Register error', error);
+      }
     }
   };
+
+  const handleGoToLogin = () => {
+    // Clear the pending verification from sessionStorage
+    sessionStorage.removeItem('pendingVerificationEmail');
+    navigate('/');
+  };
+
+  // Show verification sent message
+  if (verificationEmail) {
+    return (
+      <div className={cn("flex flex-col gap-6", className)} {...props}>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl">Verifica tu email</CardTitle>
+            <CardDescription className="text-xs">
+              Hemos enviado un correo de verificacion
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-4 text-center">
+              <div className="p-4 bg-green-50 border border-green-200 rounded">
+                <p className="text-sm text-green-800">
+                  Se ha enviado un enlace de verificacion a:
+                </p>
+                <p className="font-semibold text-green-900 mt-1">
+                  {verificationEmail}
+                </p>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Revisa tu bandeja de entrada (y spam) y haz clic en el enlace para activar tu cuenta.
+              </p>
+              <Button variant="outline" className="w-full" onClick={handleGoToLogin}>
+                Ir a Iniciar Sesion
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>

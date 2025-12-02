@@ -34,6 +34,7 @@ dist-ssr
 serviceAccount*.json
 firebase-admin*.json
 *.private-key.json
+.firebase
 
 # Ias
 CLAUDE*md

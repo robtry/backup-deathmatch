@@ -4,6 +4,7 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  sendEmailVerification,
   type User as FirebaseUser
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
@@ -141,6 +142,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const firebaseUser = userCredential.user;
       authLogger.debug('Firebase Auth login successful', { uid: firebaseUser.uid });
 
+      // Check if email is verified
+      if (!firebaseUser.emailVerified) {
+        authLogger.warn('Login blocked - email not verified', { uid: firebaseUser.uid, email: firebaseUser.email });
+        // Sign out the user since they can't access the app
+        await signOut(auth);
+        set({ loading: false, error: 'Debes verificar tu email antes de iniciar sesion. Revisa tu bandeja de entrada.' });
+        throw new Error('EMAIL_NOT_VERIFIED');
+      }
+
       // Fetch user data from Firestore
       const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
 
@@ -167,16 +177,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       return { currentRoom: user.currentRoom };
     } catch (error: any) {
-      let errorMessage = 'Error al iniciar sesión';
+      // If it's our custom error, re-throw it
+      if (error.message === 'EMAIL_NOT_VERIFIED') {
+        throw error;
+      }
+
+      let errorMessage = 'Error al iniciar sesion';
 
       if (error.code === 'auth/user-not-found') {
         errorMessage = 'Usuario no encontrado';
       } else if (error.code === 'auth/wrong-password') {
-        errorMessage = 'Contraseña incorrecta';
+        errorMessage = 'Contrasena incorrecta';
       } else if (error.code === 'auth/invalid-email') {
-        errorMessage = 'Email inválido';
+        errorMessage = 'Email invalido';
       } else if (error.code === 'auth/too-many-requests') {
-        errorMessage = 'Demasiados intentos. Intenta más tarde';
+        errorMessage = 'Demasiados intentos. Intenta mas tarde';
+      } else if (error.code === 'auth/invalid-credential') {
+        errorMessage = 'Credenciales invalidas';
       }
 
       authLogger.error('Login failed', { code: error.code, message: errorMessage });
@@ -193,6 +210,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
       authLogger.debug('Firebase Auth registration successful', { uid: firebaseUser.uid });
+
+      // Send email verification
+      await sendEmailVerification(firebaseUser);
+      authLogger.info('Verification email sent', { email: firebaseUser.email });
 
       // Create user document in Firestore
       const newUser: User = {
@@ -215,18 +236,35 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       await setDoc(doc(db, 'users', firebaseUser.uid), firestoreData);
 
-      authLogger.info('Registration successful - user created in Auth and Firestore', { uid: firebaseUser.uid });
+      authLogger.info('Registration successful - user created in Auth and Firestore, verification email sent', { uid: firebaseUser.uid });
 
-      set({ user: newUser, firebaseUser, loading: false, error: null, registrationInProgress: false });
+      // CRITICAL: Store email in sessionStorage BEFORE signOut
+      // signOut triggers onAuthStateChanged which remounts components
+      // We need sessionStorage set BEFORE that happens
+      sessionStorage.setItem('pendingVerificationEmail', email);
+
+      // Sign out the user - they need to verify email first
+      await signOut(auth);
+      authLogger.info('User signed out after registration - awaiting email verification');
+
+      set({ user: null, firebaseUser: null, loading: false, error: null, registrationInProgress: false });
+
+      // Throw a special error to indicate registration was successful but verification is needed
+      throw new Error('VERIFICATION_EMAIL_SENT');
     } catch (error: any) {
+      // If it's our success signal, re-throw it
+      if (error.message === 'VERIFICATION_EMAIL_SENT') {
+        throw error;
+      }
+
       let errorMessage = 'Error al registrarse';
 
       if (error.code === 'auth/email-already-in-use') {
-        errorMessage = 'Este email ya está registrado';
+        errorMessage = 'Este email ya esta registrado';
       } else if (error.code === 'auth/invalid-email') {
-        errorMessage = 'Email inválido';
+        errorMessage = 'Email invalido';
       } else if (error.code === 'auth/weak-password') {
-        errorMessage = 'La contraseña debe tener al menos 6 caracteres';
+        errorMessage = 'La contrasena debe tener al menos 6 caracteres';
       }
 
       authLogger.error('Registration failed', { code: error.code, message: errorMessage });
