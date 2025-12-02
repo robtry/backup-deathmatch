@@ -19,23 +19,26 @@ const app = initializeApp(firebaseConfig);
 // Initialize Firestore FIRST and connect to emulator BEFORE any other operation
 const db = getFirestore(app);
 
-// IMPORTANT: Connect to emulator BEFORE any Firestore operation
-// This must be called before any other Firestore method
-try {
-  connectFirestoreEmulator(db, 'localhost', 8080);
-  firestoreLogger.info('Connected to Firestore emulator at localhost:8080');
-} catch (error) {
-  firestoreLogger.error('Error connecting to Firestore emulator', error);
-}
-
-// Initialize Auth and connect to emulator
+// Initialize Auth
 const auth = getAuth(app);
 
-try {
-  connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
-  firestoreLogger.info('Connected to Auth emulator at localhost:9099');
-} catch (error) {
-  firestoreLogger.error('Error connecting to Auth emulator', error);
+// Connect to emulators ONLY in development mode
+if (import.meta.env.DEV) {
+  try {
+    connectFirestoreEmulator(db, 'localhost', 8080);
+    firestoreLogger.info('Connected to Firestore emulator at localhost:8080');
+  } catch (error) {
+    firestoreLogger.error('Error connecting to Firestore emulator', error);
+  }
+
+  try {
+    connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
+    firestoreLogger.info('Connected to Auth emulator at localhost:9099');
+  } catch (error) {
+    firestoreLogger.error('Error connecting to Auth emulator', error);
+  }
+} else {
+  firestoreLogger.info('Running in production mode - connecting to Firebase');
 }
 
 // Set persistence to LOCAL (survives browser restarts)

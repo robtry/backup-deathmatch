@@ -16,15 +16,13 @@ A retro 8-bit style memory deathmatch game built with React, TypeScript, and Fir
 # Install dependencies
 pnpm install
 
+# Run Firebase emulators
+firebase emulators:start
+
+# Populate local emulators with seed data
+FIRESTORE_EMULATOR_HOST=localhost:8080 pnpm seed:deck
+
 # Run dev server
 pnpm dev
 
-# Run Firebase emulators
-firebase emulators
 ```
-
-## Project Structure
-
-- Use camelCase for variables and functions
-- All comments, functions, and variables in English
-- No emojis in code
