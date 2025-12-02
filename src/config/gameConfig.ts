@@ -18,7 +18,7 @@ export const GAME_CONFIG = {
   pointValues: {
     authentic: 1, // Positive points for real memories
     corrupted: -1, // Negative points for corrupted data
-    fatalGlitch: -10, // Fatal glitch - instant massive damage
+    fatalGlitch: -30, // Fatal glitch - instant massive damage
   },
 
   // Win conditions

@@ -10,7 +10,7 @@ export const createMockMemoryCard = (
   const valueMap = {
     authentic: 1,
     corrupted: -1,
-    fatalGlitch: -10
+    fatalGlitch: -30
   };
 
   return {
