@@ -29,6 +29,12 @@ dist-ssr
 .env.production
 .env.*.local
 
+# Firebase service account keys (NEVER commit these!)
+*-firebase-adminsdk-*.json
+serviceAccount*.json
+firebase-admin*.json
+*.private-key.json
+
 # Ias
 CLAUDE*md
 .claude
