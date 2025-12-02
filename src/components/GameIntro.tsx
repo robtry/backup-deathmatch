@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/8bit/card';
 import { Button } from '@/components/ui/8bit/button';
 import { logger } from '@/lib/utils/logger';
@@ -106,7 +106,7 @@ export const GameIntro = ({ onComplete }: GameIntroProps) => {
   };
 
   // Animation variants for each narrative segment
-  const segmentVariants = {
+  const segmentVariants: Variants = {
     initial: {
       opacity: 0,
     },
@@ -114,39 +114,39 @@ export const GameIntro = ({ onComplete }: GameIntroProps) => {
       opacity: 1,
       transition: {
         duration: 0.8,
-        ease: 'easeOut',
+        ease: 'easeOut' as const,
       },
     },
     exit: {
       opacity: 0,
       transition: {
         duration: 0.3,
-        ease: 'easeIn',
+        ease: 'easeIn' as const,
       },
     },
   };
 
   // Animation variants for the skip button
-  const skipButtonVariants = {
+  const skipButtonVariants: Variants = {
     initial: { opacity: 0 },
     animate: {
       opacity: 1,
       transition: {
         duration: 0.5,
-        ease: 'easeOut',
+        ease: 'easeOut' as const,
       },
     },
     hover: {
       scale: 1.05,
       transition: {
         duration: 0.2,
-        ease: 'easeOut',
+        ease: 'easeOut' as const,
       },
     },
   };
 
   // Animation variants for the continue button with pulse effect
-  const continueButtonVariants = {
+  const continueButtonVariants: Variants = {
     initial: {
       opacity: 0,
       scale: 0.9,
@@ -156,14 +156,14 @@ export const GameIntro = ({ onComplete }: GameIntroProps) => {
       scale: 1,
       transition: {
         duration: 0.5,
-        ease: 'easeOut',
+        ease: 'easeOut' as const,
       },
     },
     hover: {
       scale: 1.05,
       transition: {
         duration: 0.2,
-        ease: 'easeOut',
+        ease: 'easeOut' as const,
       },
     },
     pulse: {
@@ -171,7 +171,7 @@ export const GameIntro = ({ onComplete }: GameIntroProps) => {
       transition: {
         duration: 2,
         repeat: Infinity,
-        ease: 'easeInOut',
+        ease: 'easeInOut' as const,
       },
     },
   };

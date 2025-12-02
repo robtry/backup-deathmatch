@@ -100,4 +100,3 @@ function Progress({
 }
 
 export { Progress };
-export type { BitProgressProps };

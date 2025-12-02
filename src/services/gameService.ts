@@ -1,6 +1,5 @@
 import {
   doc,
-  getDoc,
   runTransaction,
   Timestamp
 } from 'firebase/firestore';

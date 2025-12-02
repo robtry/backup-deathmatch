@@ -1,9 +1,7 @@
 import { customAlphabet } from 'nanoid';
 import {
-  collection,
   doc,
   getDoc,
-  setDoc,
   updateDoc,
   Timestamp,
   runTransaction
@@ -113,6 +111,7 @@ export const createRoom = async (userId: string, roomCode?: string): Promise<str
         selected_card_index: null, // No card selected yet
         current_multiplier: 1, // Default multiplier
         card_initiator: null, // No initiator yet
+        used_cards: [], // Track all played cards
         revealed_real_memories: [] // Track authentic memories that have been claimed
       };
 

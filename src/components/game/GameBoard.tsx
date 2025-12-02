@@ -1,6 +1,6 @@
 import { InfoPanel } from './InfoPanel';
 import { PlayArea } from './PlayArea';
-import type { PlayerInfo, FirestoreRoom, MemoryCard } from '@/types';
+import type { PlayerInfo, FirestoreRoom } from '@/types';
 
 interface GameBoardProps {
   room: FirestoreRoom;

@@ -100,6 +100,7 @@ export interface FirestoreRoom {
   current_multiplier: number; // Points multiplier (1 or 3)
   card_initiator: string | null; // UserId of the player who originally selected the card
   used_cards: PlayedCard[]; // Complete history of all cards played in the game
+  revealed_real_memories?: string[]; // Track authentic memories that have been claimed
   winner?: string | null; // UserId of the winner when game is finished
   win_reason?: string; // Reason for victory ('reached_10_points' | 'opponent_defeated')
 }

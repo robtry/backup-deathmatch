@@ -209,7 +209,8 @@ export function PlayArea({
           animate={gameStatus === 'playing' ? 'visible' : 'hidden'}
           style={{ perspective: 1000 }} // Enable 3D transforms for card flip
         >
-          {tableCards.map((card, index) => {
+          {tableCards.map((_card, index) => {
+            void _card; // Card data not needed here, only index
             const isClickable = canSelectCard && turnState === 'draw';
 
             return (

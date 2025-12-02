@@ -28,13 +28,16 @@ export function MemoryCardModal({
   card,
   turnState,
   currentMultiplier,
-  isPlayerTurn,
+  isPlayerTurn: _isPlayerTurn,
   cardInitiator,
   currentUserId,
   onClaim,
   onReject,
   isProcessing = false
 }: MemoryCardModalProps) {
+  // Note: _isPlayerTurn is kept for potential future use
+  void _isPlayerTurn;
+
   if (!card) return null;
 
   // Determine if the player can see the card AUTHENTICITY and VALUE
@@ -43,9 +46,6 @@ export function MemoryCardModal({
   // 2. They are in 'opponent_decide' state AND they were the initiator (they see full card they rejected)
   const canSeeCardDetails = (turnState === 'decide' && cardInitiator === currentUserId) ||
                             (turnState === 'opponent_decide' && cardInitiator === currentUserId);
-
-  // Everyone can see the MEMORY TEXT (the story)
-  const canSeeMemoryText = true;
 
   // Determine card color based on authenticity
   const getCardColor = (authenticity: string) => {

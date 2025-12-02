@@ -535,7 +535,7 @@ export default function GamePage() {
             )}
 
             {/* Status messages */}
-            {room?.status === 'intro' && (
+            {(room?.status as string) === 'intro' && (
               <div className="mt-6 text-center">
                 <p className="text-lg font-medium text-green-500">
                   ¡Introducción en progreso!
