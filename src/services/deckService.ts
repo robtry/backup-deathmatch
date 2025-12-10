@@ -125,8 +125,8 @@ export const generateGameDeck = async (): Promise<MemoryCard[]> => {
     // Step 3: Shuffle non-fatal authenticity assignments
     const shuffledNonFatal = shuffleArray(nonFatalAuthenticities);
 
-    // Step 4: Insert fatal glitches at random positions (but never in first 3 positions)
-    const minFatalPosition = 3; // Fatal glitch can only appear from position 3 onwards (index 3 = 4th card)
+    // Step 4: Insert fatal glitches at random positions (but never in first 7 positions)
+    const minFatalPosition = 7; // Fatal glitch can only appear from position 7 onwards (index 7 = 8th card)
     const shuffledAuthenticity: Authenticity[] = [...shuffledNonFatal];
 
     for (let i = 0; i < GAME_CONFIG.deck.distribution.fatalGlitch; i++) {
